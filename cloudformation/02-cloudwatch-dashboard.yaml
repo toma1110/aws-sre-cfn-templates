@@ -1,0 +1,174 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  【AWS SRE実践】セクション3 ハンズオン
+  CloudWatch ダッシュボード（EC2 / ALB / RDS）
+
+Parameters:
+  InstanceId:
+    Type: String
+    Description: 01-base-infrastructure で作成したEC2インスタンスID
+
+  ALBName:
+    Type: String
+    Default: sre-handson-alb
+    Description: ALBの名前
+
+  TargetGroupName:
+    Type: String
+    Default: sre-handson-tg
+    Description: ターゲットグループの名前
+
+  DBIdentifier:
+    Type: String
+    Default: sre-handson-db
+    Description: RDSのDBIdentifier
+
+Resources:
+  SREDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: SRE-Handson-Dashboard
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0, "y": 0, "width": 24, "height": 1,
+              "properties": {
+                "markdown": "# SRE ハンズオン ダッシュボード\nEC2 / ALB / RDS の主要メトリクスを一覧で確認できます"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 1, "width": 8, "height": 6,
+              "properties": {
+                "title": "EC2 CPU使用率",
+                "metrics": [
+                  ["AWS/EC2", "CPUUtilization", "InstanceId", "${InstanceId}"]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "view": "timeSeries",
+                "annotations": {
+                  "horizontal": [{"value": 80, "label": "警告ライン", "color": "#ff7f0e"}]
+                }
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 1, "width": 8, "height": 6,
+              "properties": {
+                "title": "EC2 メモリ使用率（CloudWatch Agent）",
+                "metrics": [
+                  ["CWAgent", "mem_used_percent", "InstanceId", "${InstanceId}"]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "view": "timeSeries",
+                "annotations": {
+                  "horizontal": [{"value": 85, "label": "警告ライン", "color": "#ff7f0e"}]
+                }
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 1, "width": 8, "height": 6,
+              "properties": {
+                "title": "EC2 ディスク使用率（CloudWatch Agent）",
+                "metrics": [
+                  ["CWAgent", "disk_used_percent", "InstanceId", "${InstanceId}", "path", "/", "device", "xvda1", "fstype", "xfs"]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "view": "timeSeries"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 7, "width": 8, "height": 6,
+              "properties": {
+                "title": "ALB リクエスト数",
+                "metrics": [
+                  ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "app/${ALBName}/${!Select([2], !Split([/, !GetAtt ALB.LoadBalancerArn]))}"]
+                ],
+                "period": 60,
+                "stat": "Sum",
+                "view": "timeSeries"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 7, "width": 8, "height": 6,
+              "properties": {
+                "title": "ALB 5xxエラー率",
+                "metrics": [
+                  ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", "app/${ALBName}/${!Select([2], !Split([/, !GetAtt ALB.LoadBalancerArn]))}"],
+                  ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "app/${ALBName}/${!Select([2], !Split([/, !GetAtt ALB.LoadBalancerArn]))}"]
+                ],
+                "period": 60,
+                "stat": "Sum",
+                "view": "timeSeries"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 7, "width": 8, "height": 6,
+              "properties": {
+                "title": "ALB レスポンスタイム（P99）",
+                "metrics": [
+                  ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", "app/${ALBName}/${!Select([2], !Split([/, !GetAtt ALB.LoadBalancerArn]))}"]
+                ],
+                "period": 60,
+                "stat": "p99",
+                "view": "timeSeries",
+                "annotations": {
+                  "horizontal": [{"value": 1, "label": "SLO: 1秒以内", "color": "#d62728"}]
+                }
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 13, "width": 8, "height": 6,
+              "properties": {
+                "title": "RDS CPU使用率",
+                "metrics": [
+                  ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "${DBIdentifier}"]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "view": "timeSeries"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 13, "width": 8, "height": 6,
+              "properties": {
+                "title": "RDS コネクション数",
+                "metrics": [
+                  ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", "${DBIdentifier}"]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "view": "timeSeries"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 13, "width": 8, "height": 6,
+              "properties": {
+                "title": "RDS 空きストレージ",
+                "metrics": [
+                  ["AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", "${DBIdentifier}"]
+                ],
+                "period": 60,
+                "stat": "Average",
+                "view": "timeSeries"
+              }
+            }
+          ]
+        }
+
+Outputs:
+  DashboardURL:
+    Description: CloudWatch ダッシュボードURL
+    Value: !Sub https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home#dashboards:name=SRE-Handson-Dashboard

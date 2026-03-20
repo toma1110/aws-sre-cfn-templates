@@ -1,0 +1,132 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  【AWS SRE実践】セクション9 ハンズオン
+  コストアラート（AWS Budgets + Cost Anomaly Detection）
+  ※ us-east-1 でデプロイしてください（Budgets APIの制約）
+
+Parameters:
+  NotificationEmail:
+    Type: String
+    Description: コストアラート通知先メールアドレス
+
+  MonthlyBudgetAmount:
+    Type: Number
+    Default: 3000
+    Description: 月間予算上限（円）
+
+  AnomalyThresholdAmount:
+    Type: Number
+    Default: 500
+    Description: 異常検知の閾値（円）。この金額を超えたら通知
+
+Resources:
+  # ── SNS トピック（コスト通知用） ─────────────────────────
+  CostAlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: sre-handson-cost-alerts
+      DisplayName: SRE Handson Cost Alerts
+
+  CostEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref CostAlertTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  # SNSトピックにBudgetsからの発行を許可
+  CostAlertTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref CostAlertTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - budgets.amazonaws.com
+                - costalerts.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref CostAlertTopic
+
+  # ── AWS Budgets ───────────────────────────────────────────
+  MonthlyBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: sre-handson-monthly-budget
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: !Ref MonthlyBudgetAmount
+          Unit: JPY
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref CostAlertTopic
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref CostAlertTopic
+        - Notification:
+            NotificationType: FORECASTED
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref CostAlertTopic
+
+  # ── Cost Anomaly Detection ────────────────────────────────
+  CostAnomalyMonitor:
+    Type: AWS::CE::AnomalyMonitor
+    Properties:
+      MonitorName: sre-handson-anomaly-monitor
+      MonitorType: DIMENSIONAL
+      MonitorDimension: SERVICE
+
+  CostAnomalySubscription:
+    Type: AWS::CE::AnomalySubscription
+    Properties:
+      SubscriptionName: sre-handson-anomaly-subscription
+      MonitorArnList:
+        - !GetAtt CostAnomalyMonitor.MonitorArn
+      Subscribers:
+        - Address: !Ref CostAlertTopic
+          Type: SNS
+      ThresholdExpression:
+        Dimensions:
+          Key: ANOMALY_TOTAL_IMPACT_ABSOLUTE
+          MatchOptions:
+            - GREATER_THAN_OR_EQUAL
+          Values:
+            - !Sub '${AnomalyThresholdAmount}'
+      Frequency: DAILY
+
+Outputs:
+  SNSTopicArn:
+    Description: コストアラートSNSトピックARN
+    Value: !Ref CostAlertTopic
+
+  BudgetName:
+    Description: Budgets名
+    Value: sre-handson-monthly-budget
+
+  CostExplorerURL:
+    Description: Cost Explorer URL
+    Value: https://console.aws.amazon.com/cost-management/home#/cost-explorer
+
+  AnomalyDetectionURL:
+    Description: Cost Anomaly Detection URL
+    Value: https://console.aws.amazon.com/cost-management/home#/anomaly-detection/monitors

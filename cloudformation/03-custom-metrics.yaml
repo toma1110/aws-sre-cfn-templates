@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  【AWS SRE実践】セクション3 ハンズオン
+  カスタムメトリクス送信（Lambda → CloudWatch）
+
+Resources:
+  # ── Lambda実行ロール ──────────────────────────────────────
+  MetricSenderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: sre-handson-metric-sender-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: PutMetricData
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: '*'
+
+  # ── Lambda（カスタムメトリクスを送信） ────────────────────
+  MetricSenderFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: sre-handson-metric-sender
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt MetricSenderRole.Arn
+      Timeout: 30
+      Description: ビジネスKPIをカスタムメトリクスとしてCloudWatchに送信するサンプル
+      Code:
+        ZipFile: |
+          import boto3
+          import random
+          import datetime
+
+          cw = boto3.client('cloudwatch')
+
+          def handler(event, context):
+              now = datetime.datetime.utcnow()
+
+              # アクティブユーザー数（シミュレート）
+              active_users = random.randint(50, 200)
+
+              # 注文数（シミュレート）
+              order_count = random.randint(0, 30)
+
+              # エラー数（シミュレート）
+              error_count = random.randint(0, 5)
+
+              metrics = [
+                  {
+                      'MetricName': 'ActiveUsers',
+                      'Value': active_users,
+                      'Unit': 'Count',
+                      'Dimensions': [{'Name': 'Environment', 'Value': 'handson'}]
+                  },
+                  {
+                      'MetricName': 'OrderCount',
+                      'Value': order_count,
+                      'Unit': 'Count',
+                      'Dimensions': [{'Name': 'Environment', 'Value': 'handson'}]
+                  },
+                  {
+                      'MetricName': 'AppErrorCount',
+                      'Value': error_count,
+                      'Unit': 'Count',
+                      'Dimensions': [{'Name': 'Environment', 'Value': 'handson'}]
+                  }
+              ]
+
+              cw.put_metric_data(
+                  Namespace='SREHandson/Business',
+                  MetricData=metrics
+              )
+
+              print(f"Sent metrics: ActiveUsers={active_users}, Orders={order_count}, Errors={error_count}")
+              return {'statusCode': 200, 'body': 'OK'}
+
+  # ── EventBridge（1分ごとに実行） ──────────────────────────
+  MetricSenderSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: sre-handson-metric-sender-schedule
+      Description: 1分ごとにカスタムメトリクスを送信
+      ScheduleExpression: rate(1 minute)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt MetricSenderFunction.Arn
+          Id: MetricSenderTarget
+
+  MetricSenderPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref MetricSenderFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt MetricSenderSchedule.Arn
+
+Outputs:
+  FunctionName:
+    Description: Lambda関数名
+    Value: !Ref MetricSenderFunction
+
+  MetricNamespace:
+    Description: カスタムメトリクスのNamespace
+    Value: SREHandson/Business
+
+  CloudWatchURL:
+    Description: カスタムメトリクス確認URL
+    Value: !Sub https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home#metricsV2:graph=~();namespace=SREHandson/Business

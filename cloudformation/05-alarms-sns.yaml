@@ -1,0 +1,204 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  【AWS SRE実践】セクション5 ハンズオン
+  CloudWatch Alarms + SNS → Slack通知
+
+Parameters:
+  SlackWebhookURL:
+    Type: String
+    NoEcho: true
+    Description: Slack Incoming Webhook URL
+
+  NotificationEmail:
+    Type: String
+    Description: アラート通知先メールアドレス
+
+  InstanceId:
+    Type: String
+    Description: 監視対象のEC2インスタンスID
+
+  ALBFullName:
+    Type: String
+    Description: ALBのフルネーム（例: app/sre-handson-alb/xxxxxxxx）
+
+Resources:
+  # ── SNS トピック ─────────────────────────────────────────
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: sre-handson-alerts
+      DisplayName: SRE Handson Alerts
+
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  # ── Slack通知Lambda ───────────────────────────────────────
+  SlackNotifyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: sre-handson-slack-notify-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  SlackNotifyFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: sre-handson-slack-notify
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt SlackNotifyRole.Arn
+      Timeout: 10
+      Environment:
+        Variables:
+          SLACK_WEBHOOK_URL: !Ref SlackWebhookURL
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import urllib.request
+
+          def handler(event, context):
+              for record in event.get('Records', []):
+                  message = json.loads(record['Sns']['Message'])
+                  alarm_name = message.get('AlarmName', '不明')
+                  new_state = message.get('NewStateValue', '不明')
+                  reason = message.get('NewStateReason', '')
+
+                  emoji = ':red_circle:' if new_state == 'ALARM' else ':large_green_circle:'
+                  color = 'danger' if new_state == 'ALARM' else 'good'
+
+                  payload = {
+                      'attachments': [{
+                          'color': color,
+                          'title': f'{emoji} CloudWatch アラート: {alarm_name}',
+                          'fields': [
+                              {'title': 'ステータス', 'value': new_state, 'short': True},
+                              {'title': '理由', 'value': reason, 'short': False}
+                          ],
+                          'footer': 'AWS CloudWatch Alarms'
+                      }]
+                  }
+
+                  req = urllib.request.Request(
+                      os.environ['SLACK_WEBHOOK_URL'],
+                      data=json.dumps(payload).encode(),
+                      headers={'Content-Type': 'application/json'}
+                  )
+                  urllib.request.urlopen(req)
+
+  SlackSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: lambda
+      Endpoint: !GetAtt SlackNotifyFunction.Arn
+
+  SlackNotifyPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SlackNotifyFunction
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref AlertTopic
+
+  # ── CloudWatch Alarms ─────────────────────────────────────
+  CPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: sre-handson-cpu-high
+      AlarmDescription: EC2 CPU使用率が80%を超えました
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref InstanceId
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+
+  ALB5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: sre-handson-alb-5xx
+      AlarmDescription: ALBの5xxエラーが5分間で10件を超えました
+      Namespace: AWS/ApplicationELB
+      MetricName: HTTPCode_Target_5XX_Count
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Ref ALBFullName
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+
+  ALBLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: sre-handson-alb-latency
+      AlarmDescription: ALBのP99レスポンスタイムが1秒を超えました（SLO違反）
+      Namespace: AWS/ApplicationELB
+      MetricName: TargetResponseTime
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Ref ALBFullName
+      ExtendedStatistic: p99
+      Period: 60
+      EvaluationPeriods: 3
+      Threshold: 1
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+
+  AppErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: sre-handson-app-error
+      AlarmDescription: アプリのERRORログが5分間で20件を超えました
+      Namespace: SREHandson/App
+      MetricName: ErrorCount
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 20
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+
+Outputs:
+  SNSTopicArn:
+    Description: SNSトピックARN
+    Value: !Ref AlertTopic
+
+  SlackFunctionName:
+    Description: Slack通知Lambda関数名
+    Value: !Ref SlackNotifyFunction

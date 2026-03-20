@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  【AWS SRE実践】セクション4 ハンズオン
+  CloudWatch Logs メトリクスフィルター（エラー検知）
+
+Parameters:
+  LogGroupName:
+    Type: String
+    Default: /aws/ec2/sre-handson/webapp
+    Description: 対象のCloudWatch Logsグループ名
+
+Resources:
+  # ── ロググループ（存在しない場合は作成） ─────────────────
+  WebAppLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref LogGroupName
+      RetentionInDays: 30
+
+  # ── メトリクスフィルター: ERRORログ ──────────────────────
+  ErrorLogMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref WebAppLogGroup
+      FilterName: sre-handson-error-filter
+      FilterPattern: '{ $.level = "ERROR" }'
+      MetricTransformations:
+        - MetricNamespace: SREHandson/App
+          MetricName: ErrorCount
+          MetricValue: '1'
+          DefaultValue: 0
+          Unit: Count
+
+  # ── メトリクスフィルター: レスポンスタイム ────────────────
+  SlowResponseMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref WebAppLogGroup
+      FilterName: sre-handson-5xx-filter
+      FilterPattern: '{ $.status = "500" }'
+      MetricTransformations:
+        - MetricNamespace: SREHandson/App
+          MetricName: HTTP5xxCount
+          MetricValue: '1'
+          DefaultValue: 0
+          Unit: Count
+
+Outputs:
+  LogGroupName:
+    Description: 対象ロググループ
+    Value: !Ref WebAppLogGroup
+
+  MetricNamespace:
+    Description: メトリクスのNamespace
+    Value: SREHandson/App
+
+  LogsInsightsURL:
+    Description: Logs Insights クエリURL
+    Value: !Sub |
+      https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home#logsV2:logs-insights
+
+      ── 使えるクエリ例 ──
+      # ERRORログを探す
+      fields @timestamp, @message
+      | filter level = "ERROR"
+      | sort @timestamp desc
+      | limit 50
+
+      # ステータスコード別の集計
+      fields @timestamp, status
+      | stats count() by status
+      | sort count desc
