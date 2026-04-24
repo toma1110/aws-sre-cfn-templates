@@ -8,15 +8,10 @@ Parameters:
     Type: String
     Description: 01-base-infrastructure で作成したEC2インスタンスID
 
-  ALBName:
+  ALBFullName:
     Type: String
-    Default: sre-handson-alb
-    Description: ALBの名前
-
-  TargetGroupName:
-    Type: String
-    Default: sre-handson-tg
-    Description: ターゲットグループの名前
+    Default: app/sre-handson-alb/b4281246e77237f4
+    Description: ALBのLoadBalancer識別子（app/名前/ハッシュ形式）
 
   DBIdentifier:
     Type: String
@@ -43,6 +38,7 @@ Resources:
               "x": 0, "y": 1, "width": 8, "height": 6,
               "properties": {
                 "title": "EC2 CPU使用率",
+                "region": "${AWS::Region}",
                 "metrics": [
                   ["AWS/EC2", "CPUUtilization", "InstanceId", "${InstanceId}"]
                 ],
@@ -59,6 +55,7 @@ Resources:
               "x": 8, "y": 1, "width": 8, "height": 6,
               "properties": {
                 "title": "EC2 メモリ使用率（CloudWatch Agent）",
+                "region": "${AWS::Region}",
                 "metrics": [
                   ["CWAgent", "mem_used_percent", "InstanceId", "${InstanceId}"]
                 ],
@@ -75,6 +72,7 @@ Resources:
               "x": 16, "y": 1, "width": 8, "height": 6,
               "properties": {
                 "title": "EC2 ディスク使用率（CloudWatch Agent）",
+                "region": "${AWS::Region}",
                 "metrics": [
                   ["CWAgent", "disk_used_percent", "InstanceId", "${InstanceId}", "path", "/", "device", "xvda1", "fstype", "xfs"]
                 ],
@@ -88,8 +86,9 @@ Resources:
               "x": 0, "y": 7, "width": 8, "height": 6,
               "properties": {
                 "title": "ALB リクエスト数",
+                "region": "${AWS::Region}",
                 "metrics": [
-                  ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "app/${ALBName}/${!Select([2], !Split([/, !GetAtt ALB.LoadBalancerArn]))}"]
+                  ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${ALBFullName}"]
                 ],
                 "period": 60,
                 "stat": "Sum",
@@ -101,9 +100,10 @@ Resources:
               "x": 8, "y": 7, "width": 8, "height": 6,
               "properties": {
                 "title": "ALB 5xxエラー率",
+                "region": "${AWS::Region}",
                 "metrics": [
-                  ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", "app/${ALBName}/${!Select([2], !Split([/, !GetAtt ALB.LoadBalancerArn]))}"],
-                  ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "app/${ALBName}/${!Select([2], !Split([/, !GetAtt ALB.LoadBalancerArn]))}"]
+                  ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", "${ALBFullName}"],
+                  ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${ALBFullName}"]
                 ],
                 "period": 60,
                 "stat": "Sum",
@@ -115,8 +115,9 @@ Resources:
               "x": 16, "y": 7, "width": 8, "height": 6,
               "properties": {
                 "title": "ALB レスポンスタイム（P99）",
+                "region": "${AWS::Region}",
                 "metrics": [
-                  ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", "app/${ALBName}/${!Select([2], !Split([/, !GetAtt ALB.LoadBalancerArn]))}"]
+                  ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", "${ALBFullName}"]
                 ],
                 "period": 60,
                 "stat": "p99",
@@ -131,6 +132,7 @@ Resources:
               "x": 0, "y": 13, "width": 8, "height": 6,
               "properties": {
                 "title": "RDS CPU使用率",
+                "region": "${AWS::Region}",
                 "metrics": [
                   ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "${DBIdentifier}"]
                 ],
@@ -144,6 +146,7 @@ Resources:
               "x": 8, "y": 13, "width": 8, "height": 6,
               "properties": {
                 "title": "RDS コネクション数",
+                "region": "${AWS::Region}",
                 "metrics": [
                   ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", "${DBIdentifier}"]
                 ],
@@ -157,6 +160,7 @@ Resources:
               "x": 16, "y": 13, "width": 8, "height": 6,
               "properties": {
                 "title": "RDS 空きストレージ",
+                "region": "${AWS::Region}",
                 "metrics": [
                   ["AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", "${DBIdentifier}"]
                 ],

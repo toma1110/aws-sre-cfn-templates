@@ -23,7 +23,7 @@ Parameters:
 Mappings:
   RegionMap:
     ap-northeast-1:
-      AMI: ami-0d52744d6551d851e  # Amazon Linux 2023 (東京)
+      AMI: ami-0f18986364089c4ab  # Amazon Linux 2023 (東京)
 
 Resources:
   # ── VPC ──────────────────────────────────────────────────
@@ -367,13 +367,13 @@ Resources:
 
 Outputs:
   ALBEndpoint:
-    Description: ALBのエンドポイントURL
+    Description: ALB Endpoint URL
     Value: !Sub http://${ALB.DNSName}
 
   AppInstanceId:
-    Description: EC2インスタンスID
+    Description: EC2 Instance ID
     Value: !Ref AppInstance
 
   RDSEndpoint:
-    Description: RDSエンドポイント
+    Description: RDS Endpoint
     Value: !GetAtt RDSInstance.Endpoint.Address
