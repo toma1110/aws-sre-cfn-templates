@@ -101,6 +101,109 @@ aws cloudwatch get-metric-statistics \
   --region ap-northeast-1
 ```
 
+### CloudWatch Agent設定
+
+```bash
+# CloudWatch Agentインストール（Amazon Linux 2023）
+sudo yum install -y amazon-cloudwatch-agent
+
+# 設定ウィザードを起動（対話形式）
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-config-wizard
+
+# 設定ファイル作成（手動）
+sudo tee /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json > /dev/null <<'EOF'
+{
+  "metrics": {
+    "namespace": "CWAgent",
+    "metrics_collected": {
+      "mem": {
+        "measurement": [
+          "mem_used_percent"
+        ],
+        "metrics_collection_interval": 60
+      },
+      "disk": {
+        "measurement": [
+          "disk_used_percent"
+        ],
+        "resources": ["/"],
+        "metrics_collection_interval": 60
+      }
+    }
+  }
+}
+EOF
+
+# 設定を反映してエージェント起動
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
+  -s
+
+# systemdで管理
+sudo systemctl start amazon-cloudwatch-agent
+sudo systemctl enable amazon-cloudwatch-agent
+sudo systemctl status amazon-cloudwatch-agent
+
+# エージェント状態確認
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a query -m ec2 -c default
+
+# エージェント停止
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a stop -m ec2
+
+# エージェント再起動
+sudo systemctl restart amazon-cloudwatch-agent
+```
+
+### AWS X-Ray設定
+
+```bash
+# X-Rayデーモンインストール（Amazon Linux 2023）
+sudo yum install -y aws-xray-daemon
+
+# X-Rayデーモン起動
+sudo systemctl start xray
+sudo systemctl enable xray
+sudo systemctl status xray
+
+# Python SDKインストール
+pip install aws-xray-sdk
+
+# アプリケーションコード例（Flask）
+cat > app.py <<'EOF'
+from flask import Flask
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
+
+app = Flask(__name__)
+
+# X-Rayの初期化
+xray_recorder.configure(service='sre-todo-app')
+XRayMiddleware(app, xray_recorder)
+
+@app.route('/')
+def index():
+    return 'Hello World'
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+EOF
+
+# X-Rayトレース確認
+aws xray get-trace-summaries \
+  --start-time $(date -u -d '1 hour ago' +%s) \
+  --end-time $(date -u +%s) \
+  --region ap-northeast-1
+
+# サービスマップ取得
+aws xray get-service-graph \
+  --start-time $(date -u -d '1 hour ago' +%s) \
+  --end-time $(date -u +%s) \
+  --region ap-northeast-1
+```
+
 ---
 
 ## セクション4: ログ管理
@@ -276,6 +379,62 @@ aws ec2 get-console-output \
 # セキュリティグループ確認
 aws ec2 describe-security-groups \
   --group-ids sg-xxxxxxxxxxxxxxxxx \
+  --region ap-northeast-1
+
+# Session Manager接続（ブラウザまたはCLI）
+aws ssm start-session \
+  --target i-xxxxxxxxxxxxxxxxx \
+  --region ap-northeast-1
+
+# EC2内でのトラブルシューティング
+# Session Manager接続後に実行
+top                    # プロセス・CPU・メモリ確認
+htop                   # より見やすいtop（要インストール）
+df -h                  # ディスク使用量
+free -m                # メモリ使用量
+netstat -tuln          # ポート使用状況
+journalctl -xe         # systemdログ確認
+tail -f /var/log/messages  # システムログ監視
+
+# 負荷テスト用stressコマンド
+# EPELリポジトリ有効化（Amazon Linux 2）
+sudo amazon-linux-extras install epel -y
+sudo yum install stress -y
+
+# Amazon Linux 2023の場合
+sudo yum install stress-ng -y
+
+# CPU負荷をかける（4コア、10分間）
+stress --cpu 4 --timeout 600
+
+# メモリ負荷をかける（2GB、5分間）
+stress --vm 2 --vm-bytes 1G --timeout 300
+
+# 負荷停止
+killall stress
+```
+
+### Systems Manager Run Command
+
+```bash
+# Run Commandでシェルスクリプト実行
+aws ssm send-command \
+  --instance-ids i-xxxxxxxxxxxxxxxxx \
+  --document-name "AWS-RunShellScript" \
+  --parameters 'commands=["killall stress","systemctl restart myapp"]' \
+  --region ap-northeast-1
+
+# コマンド実行結果確認
+aws ssm list-command-invocations \
+  --command-id <command-id> \
+  --details \
+  --region ap-northeast-1
+
+# 複数インスタンスに一括実行
+aws ssm send-command \
+  --targets "Key=tag:Environment,Values=production" \
+  --document-name "AWS-RunShellScript" \
+  --parameters 'commands=["sudo systemctl restart nginx"]' \
   --region ap-northeast-1
 ```
 
