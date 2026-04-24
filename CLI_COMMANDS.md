@@ -101,7 +101,7 @@ aws cloudwatch get-metric-statistics \
   --region ap-northeast-1
 ```
 
-### CloudWatch Agent設定 (セクション3 レクチャー5)
+### CloudWatch Agent設定 (セクション2 レクチャー5 / セクション3でも使用)
 
 ```bash
 # CloudWatch Agentインストール（Amazon Linux 2023）
