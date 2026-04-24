@@ -106,7 +106,7 @@ aws cloudformation delete-stack --stack-name sre-handson-base --region ap-northe
 
 ## コース情報
 
-- Udemy: [【AWS SRE実践】構築から運用へ](#) ← コース公開後にURLを更新
+- Udemy: [【AWS SRE実践】構築から運用へ](https://www.udemy.com/course/aws-sre-cloudwatch/) 
 - 対象: AWS を使い始めて運用に課題を感じているエンジニア
 - 前提知識: AWS 基礎（EC2・S3・IAM の操作経験）
 
