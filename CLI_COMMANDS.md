@@ -62,7 +62,7 @@ ab -n 1000 -c 10 http://<ALB-DNS-Name>/
 
 ## セクション3: CloudWatch監視
 
-### ダッシュボード作成
+### ダッシュボード作成 (セクション3)
 
 ```bash
 aws cloudformation deploy \
@@ -74,7 +74,7 @@ aws cloudformation deploy \
     ALBFullName=app/sre-handson-alb/xxxxxxxxxx
 ```
 
-### カスタムメトリクス送信
+### カスタムメトリクス送信 (セクション3)
 
 ```bash
 # Lambda関数デプロイ
@@ -101,7 +101,7 @@ aws cloudwatch get-metric-statistics \
   --region ap-northeast-1
 ```
 
-### CloudWatch Agent設定
+### CloudWatch Agent設定 (セクション3 レクチャー5)
 
 ```bash
 # CloudWatch Agentインストール（Amazon Linux 2023）
@@ -157,7 +157,7 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
 sudo systemctl restart amazon-cloudwatch-agent
 ```
 
-### AWS X-Ray設定
+### AWS X-Ray設定 (セクション2 レクチャー5)
 
 ```bash
 # X-Rayデーモンインストール（Amazon Linux 2023）
@@ -208,7 +208,7 @@ aws xray get-service-graph \
 
 ## セクション4: ログ管理
 
-### ログメトリクスフィルター作成
+### ログメトリクスフィルター作成 (セクション4)
 
 ```bash
 aws cloudformation deploy \
@@ -217,7 +217,7 @@ aws cloudformation deploy \
   --region ap-northeast-1
 ```
 
-### CloudWatch Logs 操作
+### CloudWatch Logs 操作 (セクション4)
 
 ```bash
 # ロググループ一覧
@@ -247,7 +247,7 @@ aws logs describe-metric-filters \
 
 ## セクション5: アラート設定
 
-### アラーム + SNS作成
+### アラーム + SNS作成 (セクション5)
 
 ```bash
 aws cloudformation deploy \
@@ -262,7 +262,7 @@ aws cloudformation deploy \
     ALBFullName=app/sre-handson-alb/xxxxxxxxxx
 ```
 
-### アラーム操作
+### アラーム操作 (セクション5)
 
 ```bash
 # アラーム一覧
@@ -286,7 +286,7 @@ aws cloudwatch set-alarm-state \
   --region ap-northeast-1
 ```
 
-### SNS操作
+### SNS操作 (セクション5)
 
 ```bash
 # SNSトピック一覧
@@ -305,82 +305,11 @@ aws sns publish \
 
 ---
 
-## セクション9: コスト管理
+## セクション7: インシデント対応
 
-### コストアラート作成（us-east-1）
-
-```bash
-aws cloudformation deploy \
-  --template-file 06-cost-alerts.yaml \
-  --stack-name sre-handson-cost \
-  --region us-east-1 \
-  --parameter-overrides \
-    NotificationEmail=your@email.com \
-    MonthlyBudgetAmount=20
-```
-
-### コスト確認
+### 負荷テスト・トラブルシューティング (セクション7 レクチャー4)
 
 ```bash
-# 今月のコスト取得
-aws ce get-cost-and-usage \
-  --time-period Start=$(date -u +%Y-%m-01),End=$(date -u +%Y-%m-%d) \
-  --granularity MONTHLY \
-  --metrics BlendedCost \
-  --region us-east-1
-
-# サービス別コスト
-aws ce get-cost-and-usage \
-  --time-period Start=$(date -u +%Y-%m-01),End=$(date -u +%Y-%m-%d) \
-  --granularity MONTHLY \
-  --metrics BlendedCost \
-  --group-by Type=DIMENSION,Key=SERVICE \
-  --region us-east-1
-
-# Budget確認
-aws budgets describe-budgets \
-  --account-id $(aws sts get-caller-identity --query Account --output text) \
-  --region us-east-1
-```
-
----
-
-## トラブルシューティング
-
-### CloudFormation エラー確認
-
-```bash
-# スタックイベント確認
-aws cloudformation describe-stack-events \
-  --stack-name sre-handson-base \
-  --region ap-northeast-1 \
-  --max-items 20
-
-# 失敗したリソースのみ表示
-aws cloudformation describe-stack-events \
-  --stack-name sre-handson-base \
-  --region ap-northeast-1 \
-  --query 'StackEvents[?ResourceStatus==`CREATE_FAILED`]'
-```
-
-### EC2 トラブルシューティング
-
-```bash
-# インスタンス状態確認
-aws ec2 describe-instances \
-  --instance-ids i-xxxxxxxxxxxxxxxxx \
-  --region ap-northeast-1
-
-# システムログ取得
-aws ec2 get-console-output \
-  --instance-id i-xxxxxxxxxxxxxxxxx \
-  --region ap-northeast-1
-
-# セキュリティグループ確認
-aws ec2 describe-security-groups \
-  --group-ids sg-xxxxxxxxxxxxxxxxx \
-  --region ap-northeast-1
-
 # Session Manager接続（ブラウザまたはCLI）
 aws ssm start-session \
   --target i-xxxxxxxxxxxxxxxxx \
@@ -414,7 +343,7 @@ stress --vm 2 --vm-bytes 1G --timeout 300
 killall stress
 ```
 
-### Systems Manager Run Command
+### Systems Manager Run Command (セクション7 レクチャー4)
 
 ```bash
 # Run Commandでシェルスクリプト実行
@@ -438,7 +367,86 @@ aws ssm send-command \
   --region ap-northeast-1
 ```
 
-### RDS 接続確認
+---
+
+## セクション9: コスト管理
+
+### コストアラート作成（us-east-1） (セクション9)
+
+```bash
+aws cloudformation deploy \
+  --template-file 06-cost-alerts.yaml \
+  --stack-name sre-handson-cost \
+  --region us-east-1 \
+  --parameter-overrides \
+    NotificationEmail=your@email.com \
+    MonthlyBudgetAmount=20
+```
+
+### コスト確認 (セクション9)
+
+```bash
+# 今月のコスト取得
+aws ce get-cost-and-usage \
+  --time-period Start=$(date -u +%Y-%m-01),End=$(date -u +%Y-%m-%d) \
+  --granularity MONTHLY \
+  --metrics BlendedCost \
+  --region us-east-1
+
+# サービス別コスト
+aws ce get-cost-and-usage \
+  --time-period Start=$(date -u +%Y-%m-01),End=$(date -u +%Y-%m-%d) \
+  --granularity MONTHLY \
+  --metrics BlendedCost \
+  --group-by Type=DIMENSION,Key=SERVICE \
+  --region us-east-1
+
+# Budget確認
+aws budgets describe-budgets \
+  --account-id $(aws sts get-caller-identity --query Account --output text) \
+  --region us-east-1
+```
+
+---
+
+## トラブルシューティング（全般）
+
+### CloudFormation エラー確認
+
+```bash
+# スタックイベント確認
+aws cloudformation describe-stack-events \
+  --stack-name sre-handson-base \
+  --region ap-northeast-1 \
+  --max-items 20
+
+# 失敗したリソースのみ表示
+aws cloudformation describe-stack-events \
+  --stack-name sre-handson-base \
+  --region ap-northeast-1 \
+  --query 'StackEvents[?ResourceStatus==`CREATE_FAILED`]'
+```
+
+### EC2 トラブルシューティング（全般）
+
+```bash
+# インスタンス状態確認
+aws ec2 describe-instances \
+  --instance-ids i-xxxxxxxxxxxxxxxxx \
+  --region ap-northeast-1
+
+# システムログ取得
+aws ec2 get-console-output \
+  --instance-id i-xxxxxxxxxxxxxxxxx \
+  --region ap-northeast-1
+
+# セキュリティグループ確認
+aws ec2 describe-security-groups \
+  --group-ids sg-xxxxxxxxxxxxxxxxx \
+  --region ap-northeast-1
+```
+
+### RDS 接続確認（セクション2）
 
 ```bash
 # RDSエンドポイント確認
