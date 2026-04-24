@@ -1,24 +1,22 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: |
-  【AWS SRE実践】セクション2 ハンズオン
-  本番想定のサンプルWebアプリ基盤（VPC / ALB / EC2 / RDS）
+Description: Section 2 Hands-on - Base infrastructure (VPC / ALB / EC2 / RDS)
 
 Parameters:
   DBPassword:
     Type: String
     NoEcho: true
     MinLength: 8
-    Description: RDS Masterパスワード（8文字以上）
+    Description: RDS Master password (8+ characters)
 
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
-    Description: EC2接続用のキーペア名
+    Description: EC2 key pair name
 
   InstanceType:
     Type: String
     Default: t3.micro
     AllowedValues: [t3.micro, t3.small, t3.medium]
-    Description: EC2インスタンスタイプ
+    Description: EC2 instance type
 
 Mappings:
   RegionMap:

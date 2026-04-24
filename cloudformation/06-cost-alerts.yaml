@@ -1,23 +1,20 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: |
-  【AWS SRE実践】セクション9 ハンズオン
-  コストアラート（AWS Budgets + Cost Anomaly Detection）
-  ※ us-east-1 でデプロイしてください（Budgets APIの制約）
+Description: Section 9 Hands-on - Cost Alerts (AWS Budgets + Cost Anomaly Detection) - Deploy to us-east-1
 
 Parameters:
   NotificationEmail:
     Type: String
-    Description: コストアラート通知先メールアドレス
+    Description: Cost alert notification email address
 
   MonthlyBudgetAmount:
     Type: Number
     Default: 3000
-    Description: 月間予算上限（円）
+    Description: Monthly budget limit (JPY)
 
   AnomalyThresholdAmount:
     Type: Number
     Default: 500
-    Description: 異常検知の閾値（円）。この金額を超えたら通知
+    Description: Anomaly detection threshold (JPY). Notify when exceeded
 
 Resources:
   # ── SNS トピック（コスト通知用） ─────────────────────────
@@ -116,11 +113,11 @@ Resources:
 
 Outputs:
   SNSTopicArn:
-    Description: コストアラートSNSトピックARN
+    Description: Cost alert SNS Topic ARN
     Value: !Ref CostAlertTopic
 
   BudgetName:
-    Description: Budgets名
+    Description: Budget name
     Value: sre-handson-monthly-budget
 
   CostExplorerURL:

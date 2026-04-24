@@ -1,7 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: |
-  【AWS SRE実践】セクション5 ハンズオン
-  CloudWatch Alarms + SNS → Slack通知
+Description: Section 5 Hands-on - CloudWatch Alarms + SNS Slack notification
 
 Parameters:
   SlackWebhookURL:
@@ -11,15 +9,15 @@ Parameters:
 
   NotificationEmail:
     Type: String
-    Description: アラート通知先メールアドレス
+    Description: Alert notification email address
 
   InstanceId:
     Type: String
-    Description: 監視対象のEC2インスタンスID
+    Description: EC2 Instance ID to monitor
 
   ALBFullName:
     Type: String
-    Description: ALBのフルネーム（例: app/sre-handson-alb/xxxxxxxx）
+    Description: ALB full name (e.g. app/sre-handson-alb/xxxxxxxx)
 
 Resources:
   # ── SNS トピック ─────────────────────────────────────────
@@ -117,7 +115,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: sre-handson-cpu-high
-      AlarmDescription: EC2 CPU使用率が80%を超えました
+      AlarmDescription: EC2 CPU utilization exceeded 80%
       Namespace: AWS/EC2
       MetricName: CPUUtilization
       Dimensions:
@@ -138,7 +136,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: sre-handson-alb-5xx
-      AlarmDescription: ALBの5xxエラーが5分間で10件を超えました
+      AlarmDescription: ALB 5xx errors exceeded 10 in 5 minutes
       Namespace: AWS/ApplicationELB
       MetricName: HTTPCode_Target_5XX_Count
       Dimensions:
@@ -159,7 +157,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: sre-handson-alb-latency
-      AlarmDescription: ALBのP99レスポンスタイムが1秒を超えました（SLO違反）
+      AlarmDescription: ALB P99 response time exceeded 1s (SLO violation)
       Namespace: AWS/ApplicationELB
       MetricName: TargetResponseTime
       Dimensions:
@@ -180,7 +178,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: sre-handson-app-error
-      AlarmDescription: アプリのERRORログが5分間で20件を超えました
+      AlarmDescription: App ERROR logs exceeded 20 in 5 minutes
       Namespace: SREHandson/App
       MetricName: ErrorCount
       Statistic: Sum
@@ -196,9 +194,9 @@ Resources:
 
 Outputs:
   SNSTopicArn:
-    Description: SNSトピックARN
+    Description: SNS Topic ARN
     Value: !Ref AlertTopic
 
   SlackFunctionName:
-    Description: Slack通知Lambda関数名
+    Description: Slack notification Lambda function name
     Value: !Ref SlackNotifyFunction

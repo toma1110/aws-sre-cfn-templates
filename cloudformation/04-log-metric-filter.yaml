@@ -1,13 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: |
-  【AWS SRE実践】セクション4 ハンズオン
-  CloudWatch Logs メトリクスフィルター（エラー検知）
+Description: Section 4 Hands-on - CloudWatch Logs Metric Filter (error detection)
 
 Parameters:
   LogGroupName:
     Type: String
     Default: /aws/ec2/sre-handson/webapp
-    Description: 対象のCloudWatch Logsグループ名
+    Description: Target CloudWatch Logs group name
 
 Resources:
   # ── ロググループ（存在しない場合は作成） ─────────────────
@@ -47,15 +45,15 @@ Resources:
 
 Outputs:
   LogGroupName:
-    Description: 対象ロググループ
+    Description: Target log group
     Value: !Ref WebAppLogGroup
 
   MetricNamespace:
-    Description: メトリクスのNamespace
+    Description: Metrics namespace
     Value: SREHandson/App
 
   LogsInsightsURL:
-    Description: Logs Insights クエリURL
+    Description: Logs Insights query URL
     Value: !Sub |
       https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home#logsV2:logs-insights
 

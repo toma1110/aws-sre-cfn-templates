@@ -1,7 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: |
-  【AWS SRE実践】セクション3 ハンズオン
-  カスタムメトリクス送信（Lambda → CloudWatch）
+Description: Section 3 Hands-on - Custom Metrics (Lambda to CloudWatch)
 
 Resources:
   # ── Lambda実行ロール ──────────────────────────────────────
@@ -36,7 +34,7 @@ Resources:
       Handler: index.handler
       Role: !GetAtt MetricSenderRole.Arn
       Timeout: 30
-      Description: ビジネスKPIをカスタムメトリクスとしてCloudWatchに送信するサンプル
+      Description: Sample Lambda to send business KPIs as custom metrics to CloudWatch
       Code:
         ZipFile: |
           import boto3
@@ -91,7 +89,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Name: sre-handson-metric-sender-schedule
-      Description: 1分ごとにカスタムメトリクスを送信
+      Description: EventBridge rule to trigger Lambda every minute
       ScheduleExpression: rate(1 minute)
       State: ENABLED
       Targets:
@@ -108,13 +106,13 @@ Resources:
 
 Outputs:
   FunctionName:
-    Description: Lambda関数名
+    Description: Lambda function name
     Value: !Ref MetricSenderFunction
 
   MetricNamespace:
-    Description: カスタムメトリクスのNamespace
+    Description: Custom metrics namespace
     Value: SREHandson/Business
 
   CloudWatchURL:
-    Description: カスタムメトリクス確認URL
+    Description: CloudWatch custom metrics URL
     Value: !Sub https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home#metricsV2:graph=~();namespace=SREHandson/Business

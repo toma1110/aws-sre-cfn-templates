@@ -1,22 +1,20 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: |
-  【AWS SRE実践】セクション3 ハンズオン
-  CloudWatch ダッシュボード（EC2 / ALB / RDS）
+Description: Section 3 Hands-on - CloudWatch Dashboard (EC2 / ALB / RDS)
 
 Parameters:
   InstanceId:
     Type: String
-    Description: 01-base-infrastructure で作成したEC2インスタンスID
+    Description: EC2 Instance ID created by 01-base-infrastructure
 
   ALBFullName:
     Type: String
     Default: app/sre-handson-alb/b4281246e77237f4
-    Description: ALBのLoadBalancer識別子（app/名前/ハッシュ形式）
+    Description: ALB LoadBalancer identifier (app/name/hash format)
 
   DBIdentifier:
     Type: String
     Default: sre-handson-db
-    Description: RDSのDBIdentifier
+    Description: RDS DB Identifier
 
 Resources:
   SREDashboard:
@@ -174,5 +172,5 @@ Resources:
 
 Outputs:
   DashboardURL:
-    Description: CloudWatch ダッシュボードURL
+    Description: CloudWatch Dashboard URL
     Value: !Sub https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home#dashboards:name=SRE-Handson-Dashboard
