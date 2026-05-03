@@ -349,6 +349,7 @@ Resources:
       DBInstanceClass: db.t3.micro
       Engine: mysql
       EngineVersion: '8.0'
+      DBName: sreapp
       MasterUsername: admin
       MasterUserPassword: !Ref DBPassword
       AllocatedStorage: 20
