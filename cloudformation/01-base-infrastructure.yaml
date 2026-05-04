@@ -231,8 +231,14 @@ Resources:
           import sys
           import time
           from datetime import datetime
+          from aws_xray_sdk.core import xray_recorder
+          from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
 
           app = Flask(__name__)
+
+          # X-Ray設定
+          xray_recorder.configure(service='SRE-Handson-App')
+          XRayMiddleware(app, xray_recorder)
 
           # JSON形式のログ設定
           class JsonFormatter(logging.Formatter):
@@ -342,6 +348,7 @@ Resources:
           # requirements.txt作成
           cat > /home/ec2-user/app/requirements.txt << 'EOFREQ'
           Flask==3.0.0
+          aws-xray-sdk==2.12.0
           EOFREQ
 
           # 依存関係インストール
