@@ -503,8 +503,9 @@ filter remote_addr != "N/A"
 
 -- エンドポイント別のエラー率
 filter path != "N/A"
-| stats count(*) as total, 
-        count_if(status = 500) as errors 
+| stats count(*) as requests by path, status
+| stats sum(case status = 500 then requests else 0 end) as errors,
+        sum(requests) as total
         by path
 | sort errors desc
 
