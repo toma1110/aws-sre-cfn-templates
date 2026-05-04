@@ -102,6 +102,18 @@ sudo dnf install -y httpd-tools
 
 # 負荷テスト（Apache Bench）
 ab -n 1000 -c 10 http://<ALB-DNS-Name>/
+
+# エラーログを発生させるためのテスト（セクション4のメトリクスフィルター学習用）
+# /api/data エンドポイント（20%の確率でエラー）
+ab -n 100 -c 5 http://<ALB-DNS-Name>/api/data
+
+# /api/process エンドポイント（15%の確率でエラー）
+ab -n 100 -c 5 http://<ALB-DNS-Name>/api/process
+
+# ログ確認（JSON形式で出力される）
+# 正常ログ例: {"timestamp": "2024-05-04T08:30:00.123Z", "level": "INFO", "message": "Successfully retrieved data", "logger": "app", "requestId": "req-000001"}
+# エラーログ例: {"timestamp": "2024-05-04T08:30:01.456Z", "level": "ERROR", "message": "Database connection failed", "logger": "app", "requestId": "req-000002"}
+sudo tail -f /var/log/todo-app.log
 ```
 
 ---
@@ -262,6 +274,15 @@ aws cloudwatch put-metric-data \
 
 CloudFormationテンプレートを使用してLambda関数を作成し、定期的にカスタムメトリクスを送信することもできます。
 
+**Lambda関数が送信するメトリクス:**
+- Namespace: `SREHandson/Business`
+- メトリクス:
+  - `ActiveUsers` (Count) - アクティブユーザー数 (ランダム値: 100-500)
+  - `OrderCount` (Count) - 注文数 (ランダム値: 10-100)
+  - `AppErrorCount` (Count) - エラー数 (ランダム値: 0-10)
+- Dimension: `Environment=handson`
+- 実行頻度: 1分ごと (EventBridge)
+
 ```bash
 # Lambda関数デプロイ
 aws cloudformation deploy \
@@ -282,12 +303,17 @@ cat /tmp/lambda-output.json
 #### メトリクス確認
 
 ```bash
-# カスタムメトリクス一覧
+# カスタムメトリクス一覧 (方法1/2の場合)
 aws cloudwatch list-metrics \
   --namespace "MyApp/Production" \
   --region ap-northeast-1
 
-# メトリクスデータ取得
+# カスタムメトリクス一覧 (方法3 Lambdaの場合)
+aws cloudwatch list-metrics \
+  --namespace "SREHandson/Business" \
+  --region ap-northeast-1
+
+# メトリクスデータ取得 (方法1/2の例)
 aws cloudwatch get-metric-statistics \
   --namespace "MyApp/Production" \
   --metric-name ErrorCount \
@@ -297,11 +323,42 @@ aws cloudwatch get-metric-statistics \
   --period 300 \
   --statistics Sum Average \
   --region ap-northeast-1
+
+# メトリクスデータ取得 (方法3 Lambdaの例)
+aws cloudwatch get-metric-statistics \
+  --namespace "SREHandson/Business" \
+  --metric-name ActiveUsers \
+  --dimensions Name=Environment,Value=handson \
+  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+  --period 60 \
+  --statistics Average Maximum Minimum \
+  --region ap-northeast-1
 ```
 
 ---
 
 ## セクション4: ログ管理
+
+### アプリケーションのログ形式について
+
+このハンズオンのアプリケーションは**JSON形式**でログを出力します。これにより構造化ログとして扱え、メトリクスフィルターやLogs Insightsでの検索が容易になります。
+
+**ログ形式の例:**
+```json
+{"timestamp": "2024-05-04T08:30:00.123Z", "level": "INFO", "message": "Successfully retrieved data", "logger": "app", "requestId": "req-000001"}
+{"timestamp": "2024-05-04T08:30:01.456Z", "level": "ERROR", "message": "Database connection failed", "logger": "app", "requestId": "req-000002"}
+```
+
+**エラーログの発生方法:**
+- `/api/data` エンドポイント: 20%の確率でエラー（500エラー）
+- `/api/process` エンドポイント: 15%の確率でエラー（500エラー）
+
+```bash
+# エラーログを発生させる
+ab -n 100 -c 5 http://<ALB-DNS-Name>/api/data
+ab -n 100 -c 5 http://<ALB-DNS-Name>/api/process
+```
 
 ### ログメトリクスフィルター作成 (セクション4)
 

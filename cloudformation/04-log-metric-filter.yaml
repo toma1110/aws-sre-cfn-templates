@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Section 4 Hands-on - CloudWatch Logs Metric Filter (error detection)
+Description: Section 4 Hands-on - CloudWatch Logs Metric Filter (JSON log format)
 
 Parameters:
   LogGroupName:
@@ -9,6 +9,8 @@ Parameters:
 
 Resources:
   # ── メトリクスフィルター: ERRORログ ──────────────────────
+  # JSON形式のログから level = "ERROR" を検出
+  # ログ例: {"timestamp": "2024-05-04T08:30:01.456Z", "level": "ERROR", "message": "Database connection failed", "logger": "app", "requestId": "req-000002"}
   ErrorLogMetricFilter:
     Type: AWS::Logs::MetricFilter
     Properties:
@@ -22,7 +24,10 @@ Resources:
           DefaultValue: 0
           Unit: Count
 
-  # ── メトリクスフィルター: レスポンスタイム ────────────────
+  # ── メトリクスフィルター: 5xxエラー ────────────────────
+  # 注意: このフィルターはログに status フィールドがある場合に機能します
+  # 現在のアプリケーションではログにstatusを出力していないため、
+  # ERRORレベルのログをカウントすることで代替しています
   SlowResponseMetricFilter:
     Type: AWS::Logs::MetricFilter
     Properties:

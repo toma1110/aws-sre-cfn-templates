@@ -219,32 +219,103 @@ Resources:
           
           # パッケージインストール
           dnf update -y
-          dnf install -y git python3-pip mariadb105 amazon-cloudwatch-agent
+          dnf install -y python3-pip amazon-cloudwatch-agent
 
-          # TODO アプリのセットアップ
-          cd /home/ec2-user
-          git clone https://github.com/toma1110/sre-todo-app.git
-          cd sre-todo-app
-          pip3 install -r requirements.txt
-          cd /home/ec2-user
-          chown -R ec2-user:ec2-user sre-todo-app
+          # アプリケーション作成
+          mkdir -p /home/ec2-user/app
+          cat > /home/ec2-user/app/app.py << 'EOFAPP'
+          from flask import Flask, jsonify, request
+          import json
+          import logging
+          import random
+          import sys
+          from datetime import datetime
+
+          app = Flask(__name__)
+
+          # JSON形式のログ設定
+          class JsonFormatter(logging.Formatter):
+              def format(self, record):
+                  log_data = {
+                      'timestamp': datetime.utcnow().isoformat() + 'Z',
+                      'level': record.levelname,
+                      'message': record.getMessage(),
+                      'logger': record.name,
+                      'requestId': getattr(record, 'requestId', 'N/A')
+                  }
+                  if record.exc_info:
+                      log_data['exception'] = self.formatException(record.exc_info)
+                  return json.dumps(log_data)
+
+          handler = logging.StreamHandler(sys.stdout)
+          handler.setFormatter(JsonFormatter())
+          app.logger.addHandler(handler)
+          app.logger.setLevel(logging.INFO)
+
+          request_counter = 0
+
+          @app.route('/')
+          def index():
+              global request_counter
+              request_counter += 1
+              request_id = f"req-{request_counter:06d}"
+              
+              app.logger.info(f"Received request to /", extra={'requestId': request_id})
+              return jsonify({'status': 'ok', 'service': 'SRE Handson App', 'requestId': request_id})
+
+          @app.route('/api/data')
+          def get_data():
+              global request_counter
+              request_counter += 1
+              request_id = f"req-{request_counter:06d}"
+              
+              # 20%の確率でエラーを発生させる
+              if random.random() < 0.2:
+                  app.logger.error(f"Database connection failed", extra={'requestId': request_id})
+                  return jsonify({'error': 'Internal server error', 'requestId': request_id}), 500
+              
+              app.logger.info(f"Successfully retrieved data", extra={'requestId': request_id})
+              return jsonify({'data': [1, 2, 3], 'requestId': request_id}), 200
+
+          @app.route('/api/process')
+          def process():
+              global request_counter
+              request_counter += 1
+              request_id = f"req-{request_counter:06d}"
+              
+              # 15%の確率でエラーを発生させる
+              if random.random() < 0.15:
+                  app.logger.error(f"Processing failed due to invalid input", extra={'requestId': request_id})
+                  return jsonify({'error': 'Processing error', 'requestId': request_id}), 500
+              
+              app.logger.info(f"Processing completed successfully", extra={'requestId': request_id})
+              return jsonify({'result': 'success', 'requestId': request_id}), 200
+
+          if __name__ == '__main__':
+              app.logger.info("Application starting", extra={'requestId': 'startup'})
+              app.run(host='0.0.0.0', port=8080)
+          EOFAPP
+
+          # requirements.txt作成
+          cat > /home/ec2-user/app/requirements.txt << 'EOFREQ'
+          Flask==3.0.0
+          EOFREQ
+
+          # 依存関係インストール
+          pip3 install -r /home/ec2-user/app/requirements.txt
+
+          chown -R ec2-user:ec2-user /home/ec2-user/app
 
           # systemdサービスとして登録
           cat > /etc/systemd/system/todo-app.service << 'EOFSERVICE'
           [Unit]
-          Description=SRE TODO App
+          Description=SRE Handson App
           After=network.target
 
           [Service]
           Type=simple
           User=ec2-user
-          WorkingDirectory=/home/ec2-user/sre-todo-app
-          Environment="DB_HOST=${RDSInstance.Endpoint.Address}"
-          Environment="DB_PORT=3306"
-          Environment="DB_USER=admin"
-          Environment="DB_PASSWORD=${DBPassword}"
-          Environment="DB_NAME=sreapp"
-          Environment="APP_PORT=8080"
+          WorkingDirectory=/home/ec2-user/app
           ExecStart=/usr/bin/python3 app.py
           Restart=always
           StandardOutput=append:/var/log/todo-app.log
@@ -258,7 +329,7 @@ Resources:
           systemctl enable todo-app
           systemctl start todo-app
 
-          # CloudWatch Agent設定（traces セクション追加）
+          # CloudWatch Agent設定
           mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
           cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'EOFCW'
           {
@@ -274,8 +345,7 @@ Resources:
                     {
                       "file_path": "/var/log/todo-app.log",
                       "log_group_name": "/aws/ec2/sre-handson/webapp",
-                      "log_stream_name": "{instance_id}",
-                      "timestamp_format": "%Y-%m-%d %H:%M:%S"
+                      "log_stream_name": "{instance_id}"
                     }
                   ]
                 }
