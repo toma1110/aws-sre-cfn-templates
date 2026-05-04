@@ -564,7 +564,7 @@ aws cloudwatch describe-alarm-history \
 
 # アラームテスト（手動でアラーム状態に変更）
 aws cloudwatch set-alarm-state \
-  --alarm-name "sre-handson-high-cpu" \
+  --alarm-name "sre-handson-cpu-high" \
   --state-value ALARM \
   --state-reason "Testing alarm notification" \
   --region ap-northeast-1
