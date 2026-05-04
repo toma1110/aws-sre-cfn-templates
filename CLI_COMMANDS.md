@@ -97,6 +97,9 @@ sudo systemctl status todo-app
 # ALBエンドポイントへアクセス
 curl http://<ALB-DNS-Name>
 
+# Apache Benchのインストール（Amazon Linux 2023）
+sudo dnf install -y httpd-tools
+
 # 負荷テスト（Apache Bench）
 ab -n 1000 -c 10 http://<ALB-DNS-Name>/
 ```
@@ -104,6 +107,54 @@ ab -n 1000 -c 10 http://<ALB-DNS-Name>/
 ---
 
 ## セクション3: CloudWatch監視
+
+### CloudWatch Agent設定
+
+**注意: CloudFormation テンプレート (01-base-infrastructure.yaml) では CloudWatch Agent が自動的にインストール・設定されます。**
+
+```bash
+# CloudWatch Agentインストール（手動セットアップの場合）
+sudo dnf install -y amazon-cloudwatch-agent
+
+# エージェント状態確認
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a status -m ec2
+
+# 設定ファイル確認
+sudo cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+# エージェント再起動
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config \
+  -m ec2 \
+  -s \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+```
+
+### AWS X-Ray設定
+
+**注意: CloudFormation テンプレート (01-base-infrastructure.yaml) では、CloudWatch Agent の traces セクションで X-Ray トレースを収集します。X-Ray daemon の個別インストールは不要です。**
+
+```bash
+# CloudWatch Agent の traces 設定確認
+sudo cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+# X-Rayトレース確認
+aws xray get-trace-summaries \
+  --start-time $(date -u -d '1 hour ago' +%s) \
+  --end-time $(date -u +%s) \
+  --region ap-northeast-1
+
+# サービスマップ取得
+aws xray get-service-graph \
+  --start-time $(date -u -d '1 hour ago' +%s) \
+  --end-time $(date -u +%s) \
+  --region ap-northeast-1
+```
+
+**補足:**
+- 既に X-Ray daemon をインストール済みの場合は、そのまま使い続けても問題ありません
+- CloudWatch Agent と X-Ray daemon は機能的に同等です
 
 ### ダッシュボード作成 (セクション3)
 
@@ -143,112 +194,6 @@ aws cloudwatch get-metric-statistics \
   --statistics Average \
   --region ap-northeast-1
 ```
-
-### CloudWatch Agent設定 (セクション2 レクチャー5 / セクション3でも使用)
-
-```bash
-# CloudWatch Agentインストール（Amazon Linux 2023）
-sudo yum install -y amazon-cloudwatch-agent
-
-# 設定ウィザードを起動（対話形式）
-sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-config-wizard
-
-# 設定ファイル作成（手動）
-sudo tee /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json > /dev/null <<'EOF'
-{
-  "metrics": {
-    "namespace": "CWAgent",
-    "metrics_collected": {
-      "mem": {
-        "measurement": [
-          "mem_used_percent"
-        ],
-        "metrics_collection_interval": 60
-      },
-      "disk": {
-        "measurement": [
-          "disk_used_percent"
-        ],
-        "resources": ["/"],
-        "metrics_collection_interval": 60
-      }
-    }
-  }
-}
-EOF
-
-# 設定を反映してエージェント起動
-sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-  -a fetch-config -m ec2 \
-  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
-  -s
-
-# systemdで管理
-sudo systemctl start amazon-cloudwatch-agent
-sudo systemctl enable amazon-cloudwatch-agent
-sudo systemctl status amazon-cloudwatch-agent
-
-# エージェント状態確認
-sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-  -a status -m ec2
-
-# エージェント停止
-sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-  -a stop -m ec2
-
-# エージェント再起動
-sudo systemctl restart amazon-cloudwatch-agent
-```
-
-### AWS X-Ray設定 (セクション2 レクチャー5)
-
-**注意: CloudFormation テンプレート (01-base-infrastructure.yaml) では、CloudWatch Agent の traces セクションで X-Ray トレースを収集します。X-Ray daemon の個別インストールは不要です。**
-
-```bash
-# CloudWatch Agent の traces 設定は UserData で自動設定されます
-# 設定内容の確認:
-sudo cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-
-# Python SDKインストール（手動セットアップの場合）
-pip3 install aws-xray-sdk
-
-# アプリケーションコード例（Flask）
-# sre-todo-app では既に X-Ray SDK が組み込まれています
-cat > app.py <<'EOF'
-from flask import Flask
-from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
-
-app = Flask(__name__)
-
-# X-Rayの初期化
-xray_recorder.configure(service='sre-todo-app')
-XRayMiddleware(app, xray_recorder)
-
-@app.route('/')
-def index():
-    return 'Hello World'
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
-EOF
-
-# X-Rayトレース確認
-aws xray get-trace-summaries \
-  --start-time $(date -u -d '1 hour ago' +%s) \
-  --end-time $(date -u +%s) \
-  --region ap-northeast-1
-
-# サービスマップ取得
-aws xray get-service-graph \
-  --start-time $(date -u -d '1 hour ago' +%s) \
-  --end-time $(date -u +%s) \
-  --region ap-northeast-1
-```
-
-**補足:**
-- 既に X-Ray daemon をインストール済みの場合は、そのまま使い続けても問題ありません
-- CloudWatch Agent と X-Ray daemon は機能的に同等です
 
 ---
 
