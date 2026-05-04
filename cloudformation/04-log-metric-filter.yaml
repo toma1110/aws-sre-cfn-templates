@@ -8,18 +8,11 @@ Parameters:
     Description: Target CloudWatch Logs group name
 
 Resources:
-  # ── ロググループ（存在しない場合は作成） ─────────────────
-  WebAppLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Ref LogGroupName
-      RetentionInDays: 30
-
   # ── メトリクスフィルター: ERRORログ ──────────────────────
   ErrorLogMetricFilter:
     Type: AWS::Logs::MetricFilter
     Properties:
-      LogGroupName: !Ref WebAppLogGroup
+      LogGroupName: !Ref LogGroupName
       FilterName: sre-handson-error-filter
       FilterPattern: '{ $.level = "ERROR" }'
       MetricTransformations:
@@ -33,7 +26,7 @@ Resources:
   SlowResponseMetricFilter:
     Type: AWS::Logs::MetricFilter
     Properties:
-      LogGroupName: !Ref WebAppLogGroup
+      LogGroupName: !Ref LogGroupName
       FilterName: sre-handson-5xx-filter
       FilterPattern: '{ $.status = "500" }'
       MetricTransformations:
@@ -46,7 +39,7 @@ Resources:
 Outputs:
   LogGroupName:
     Description: Target log group
-    Value: !Ref WebAppLogGroup
+    Value: !Ref LogGroupName
 
   MetricNamespace:
     Description: Metrics namespace
