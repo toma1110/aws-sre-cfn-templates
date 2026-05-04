@@ -229,6 +229,7 @@ Resources:
           import logging
           import random
           import sys
+          import time
           from datetime import datetime
 
           app = Flask(__name__)
@@ -241,7 +242,12 @@ Resources:
                       'level': record.levelname,
                       'message': record.getMessage(),
                       'logger': record.name,
-                      'requestId': getattr(record, 'requestId', 'N/A')
+                      'requestId': getattr(record, 'requestId', 'N/A'),
+                      'remote_addr': getattr(record, 'remote_addr', 'N/A'),
+                      'method': getattr(record, 'method', 'N/A'),
+                      'path': getattr(record, 'path', 'N/A'),
+                      'status': getattr(record, 'status', 'N/A'),
+                      'duration': getattr(record, 'duration', 'N/A')
                   }
                   if record.exc_info:
                       log_data['exception'] = self.formatException(record.exc_info)
@@ -254,13 +260,35 @@ Resources:
 
           request_counter = 0
 
+          def log_request(request_id, status_code, duration_ms):
+              """リクエストログを記録"""
+              extra = {
+                  'requestId': request_id,
+                  'remote_addr': request.remote_addr,
+                  'method': request.method,
+                  'path': request.path,
+                  'status': status_code,
+                  'duration': duration_ms
+              }
+              if status_code >= 500:
+                  app.logger.error(f"Request failed with status {status_code}", extra=extra)
+              elif status_code >= 400:
+                  app.logger.warning(f"Client error {status_code}", extra=extra)
+              else:
+                  app.logger.info(f"Request completed successfully", extra=extra)
+
           @app.route('/')
           def index():
               global request_counter
               request_counter += 1
               request_id = f"req-{request_counter:06d}"
+              start_time = time.time()
               
-              app.logger.info(f"Received request to /", extra={'requestId': request_id})
+              # ランダムな処理時間（10-50ms）
+              time.sleep(random.uniform(0.01, 0.05))
+              
+              duration_ms = round((time.time() - start_time) * 1000, 2)
+              log_request(request_id, 200, duration_ms)
               return jsonify({'status': 'ok', 'service': 'SRE Handson App', 'requestId': request_id})
 
           @app.route('/api/data')
@@ -268,13 +296,19 @@ Resources:
               global request_counter
               request_counter += 1
               request_id = f"req-{request_counter:06d}"
+              start_time = time.time()
+              
+              # ランダムな処理時間（50-200ms）
+              time.sleep(random.uniform(0.05, 0.2))
               
               # 20%の確率でエラーを発生させる
               if random.random() < 0.2:
-                  app.logger.error(f"Database connection failed", extra={'requestId': request_id})
+                  duration_ms = round((time.time() - start_time) * 1000, 2)
+                  log_request(request_id, 500, duration_ms)
                   return jsonify({'error': 'Internal server error', 'requestId': request_id}), 500
               
-              app.logger.info(f"Successfully retrieved data", extra={'requestId': request_id})
+              duration_ms = round((time.time() - start_time) * 1000, 2)
+              log_request(request_id, 200, duration_ms)
               return jsonify({'data': [1, 2, 3], 'requestId': request_id}), 200
 
           @app.route('/api/process')
@@ -282,17 +316,26 @@ Resources:
               global request_counter
               request_counter += 1
               request_id = f"req-{request_counter:06d}"
+              start_time = time.time()
+              
+              # ランダムな処理時間（100-500ms、たまに遅い）
+              if random.random() < 0.1:
+                  time.sleep(random.uniform(0.5, 1.0))  # 10%の確率で遅い
+              else:
+                  time.sleep(random.uniform(0.1, 0.5))
               
               # 15%の確率でエラーを発生させる
               if random.random() < 0.15:
-                  app.logger.error(f"Processing failed due to invalid input", extra={'requestId': request_id})
+                  duration_ms = round((time.time() - start_time) * 1000, 2)
+                  log_request(request_id, 500, duration_ms)
                   return jsonify({'error': 'Processing error', 'requestId': request_id}), 500
               
-              app.logger.info(f"Processing completed successfully", extra={'requestId': request_id})
+              duration_ms = round((time.time() - start_time) * 1000, 2)
+              log_request(request_id, 200, duration_ms)
               return jsonify({'result': 'success', 'requestId': request_id}), 200
 
           if __name__ == '__main__':
-              app.logger.info("Application starting", extra={'requestId': 'startup'})
+              app.logger.info("Application starting", extra={'requestId': 'startup', 'remote_addr': 'N/A', 'method': 'N/A', 'path': 'N/A', 'status': 'N/A', 'duration': 'N/A'})
               app.run(host='0.0.0.0', port=8080)
           EOFAPP
 

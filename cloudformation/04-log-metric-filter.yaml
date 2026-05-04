@@ -57,12 +57,16 @@ Outputs:
 
       ── 使えるクエリ例 ──
       # ERRORログを探す
-      fields @timestamp, @message
+      fields @timestamp, message, requestId, path, status, duration
       | filter level = "ERROR"
       | sort @timestamp desc
       | limit 50
 
       # ステータスコード別の集計
-      fields @timestamp, status
+      filter status != "N/A"
       | stats count() by status
       | sort count desc
+
+      # レスポンスタイムの統計
+      filter duration != "N/A"
+      | stats avg(duration) as avg_ms, max(duration) as max_ms, pct(duration, 99) as p99_ms by bin(5m)

@@ -346,9 +346,20 @@ aws cloudwatch get-metric-statistics \
 
 **ログ形式の例:**
 ```json
-{"timestamp": "2024-05-04T08:30:00.123Z", "level": "INFO", "message": "Successfully retrieved data", "logger": "app", "requestId": "req-000001"}
-{"timestamp": "2024-05-04T08:30:01.456Z", "level": "ERROR", "message": "Database connection failed", "logger": "app", "requestId": "req-000002"}
+{"timestamp": "2024-05-04T08:30:00.123Z", "level": "INFO", "message": "Request completed successfully", "logger": "app", "requestId": "req-000001", "remote_addr": "10.0.1.50", "method": "GET", "path": "/api/data", "status": 200, "duration": 125.45}
+{"timestamp": "2024-05-04T08:30:01.456Z", "level": "ERROR", "message": "Request failed with status 500", "logger": "app", "requestId": "req-000002", "remote_addr": "10.0.1.51", "method": "GET", "path": "/api/process", "status": 500, "duration": 234.67}
 ```
+
+**ログフィールドの説明:**
+- `timestamp`: UTC時刻（ISO 8601形式）
+- `level`: ログレベル（INFO, WARNING, ERROR）
+- `message`: ログメッセージ
+- `requestId`: リクエストID（req-XXXXXX形式）
+- `remote_addr`: クライアントIPアドレス
+- `method`: HTTPメソッド（GET, POST等）
+- `path`: リクエストパス
+- `status`: HTTPステータスコード（200, 500等）
+- `duration`: レスポンスタイム（ミリ秒）
 
 **エラーログの発生方法:**
 - `/api/data` エンドポイント: 20%の確率でエラー（500エラー）
@@ -459,44 +470,60 @@ aws logs start-query \
 
 ```sql
 -- ERRORログを新しい順に50件取得
-fields @timestamp, @message, @logStream
-| filter @message like /ERROR/
+fields @timestamp, message, requestId, path, status, duration
+| filter level = "ERROR"
 | sort @timestamp desc
 | limit 50
 
 -- 特定のrequestIdに関連するすべてのログを時系列で表示
-fields @timestamp, @message
-| filter @requestId = "YOUR_REQUEST_ID"
+fields @timestamp, level, message, path, status, duration
+| filter requestId = "req-000123"
 | sort @timestamp asc
 
 -- 5分ごとのエラー件数を集計
-filter @message like /ERROR/
+filter level = "ERROR"
 | stats count(*) as errorCount by bin(5m)
 | sort @timestamp asc
 
 -- レスポンスタイムの統計（平均、最大、P99）
-filter @type = "REPORT"
-| stats avg(@duration), max(@duration), pct(@duration, 99) by bin(5m)
+filter duration != "N/A"
+| stats avg(duration) as avg_ms, max(duration) as max_ms, pct(duration, 99) as p99_ms by bin(5m)
+| sort @timestamp asc
 
 -- 特定のステータスコードをカウント
-fields @timestamp, status
-| filter status = 500
+filter status = 500
 | stats count() as count500 by bin(1h)
+| sort @timestamp asc
 
 -- IPアドレス別のリクエスト数
-fields @timestamp, remote_addr
+filter remote_addr != "N/A"
 | stats count() as requestCount by remote_addr
 | sort requestCount desc
 | limit 20
+
+-- エンドポイント別のエラー率
+fields path, status
+| filter path != "N/A"
+| stats count(*) as total, 
+        sum(status >= 500) as errors 
+        by path
+| fields path, total, errors, (errors / total * 100) as error_rate
+| sort error_rate desc
+
+-- 遅いリクエストを検出（500ms以上）
+fields @timestamp, requestId, path, duration, status
+| filter duration > 500
+| sort duration desc
+| limit 50
 ```
 
 #### Logs Insights クエリのヒント
 
 - `@timestamp`, `@message`, `@logStream` は予約フィールド
-- `like /PATTERN/` は正規表現マッチング（大文字小文字区別あり）
+- JSON形式のログでは `level`, `requestId`, `status`, `duration`, `remote_addr`, `path` などのフィールドが使用可能
+- `filter` で条件指定、`stats` で集計、`sort` でソート、`limit` で件数制限
 - `bin(5m)` は5分単位で集計（1m, 1h, 1d なども可能）
 - `pct(field, 99)` は99パーセンタイル値を計算
-- `stats` で集計、`sort` でソート、`limit` で件数制限
 - タイムスタンプはUTC表示（日本時間 -9時間）
 
 ---
