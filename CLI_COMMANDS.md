@@ -502,13 +502,11 @@ filter remote_addr != "N/A"
 | limit 20
 
 -- エンドポイント別のエラー率
-fields path, status
-| filter path != "N/A"
+filter path != "N/A"
 | stats count(*) as total, 
-        sum(status >= 500) as errors 
+        count_if(status = 500) as errors 
         by path
-| fields path, total, errors, (errors / total * 100) as error_rate
-| sort error_rate desc
+| sort errors desc
 
 -- 遅いリクエストを検出（500ms以上）
 fields @timestamp, requestId, path, duration, status
