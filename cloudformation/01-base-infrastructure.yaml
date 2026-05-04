@@ -215,15 +215,19 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          set -e
+          
+          # パッケージインストール
           dnf update -y
-          dnf install -y git python3 python3-pip amazon-cloudwatch-agent mysql
+          dnf install -y git python3-pip mariadb105 amazon-cloudwatch-agent
 
           # TODO アプリのセットアップ
           cd /home/ec2-user
           git clone https://github.com/toma1110/sre-todo-app.git
           cd sre-todo-app
           pip3 install -r requirements.txt
-          chown -R ec2-user:ec2-user /home/ec2-user/sre-todo-app
+          cd /home/ec2-user
+          chown -R ec2-user:ec2-user sre-todo-app
 
           # systemdサービスとして登録
           cat > /etc/systemd/system/todo-app.service << 'EOFSERVICE'
@@ -255,6 +259,7 @@ Resources:
           systemctl start todo-app
 
           # CloudWatch Agent設定（traces セクション追加）
+          mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
           cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'EOFCW'
           {
             "traces": {
