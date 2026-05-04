@@ -91,6 +91,116 @@ aws cloudformation deploy \
 - **リージョン**: `ap-northeast-1`（東京）を推奨。`06-cost-alerts.yaml` のみ `us-east-1` が必要
 - **費用**: ハンズオン終了後はスタックを削除して課金を止めてください
 - **RDS**: `01-base-infrastructure.yaml` の RDS は `db.t3.micro` ですが、起動中は料金が発生します
+- **自動セットアップ**: `01-base-infrastructure.yaml` を実行すると、TODO アプリが自動的にセットアップされます
+
+## 前提条件
+
+- AWS アカウント
+- EC2 キーペア（SSH 接続用）
+- AWS CLI がインストール済み（CLI を使う場合）
+- 基本的な Linux コマンドの知識
+
+## トラブルシューティング
+
+### TODO アプリにアクセスできない
+
+1. CloudFormation スタックが正常に作成されたか確認
+   ```bash
+   aws cloudformation describe-stacks --stack-name sre-handson-base --region ap-northeast-1
+   ```
+
+2. EC2 インスタンスが起動しているか確認
+   ```bash
+   aws ec2 describe-instances --instance-ids <Instance-ID> --region ap-northeast-1
+   ```
+
+3. TODO アプリのサービスが起動しているか確認（EC2 に SSH 接続後）
+   ```bash
+   sudo systemctl status todo-app
+   sudo tail -f /var/log/todo-app.log
+   ```
+
+4. セキュリティグループで ALB からポート 8080 が許可されているか確認
+
+### CloudWatch Agent が動作しない
+
+1. CloudWatch Agent のステータス確認
+   ```bash
+   sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a status -m ec2
+   ```
+
+2. CloudWatch Agent のログ確認
+   ```bash
+   sudo tail -f /opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log
+   ```
+
+3. IAM ロールに `CloudWatchAgentServerPolicy` が付与されているか確認
+
+### X-Ray トレースが表示されない
+
+1. IAM ロールに以下のポリシーが付与されているか確認
+   - `AWSXRayDaemonWriteAccess`（トレース送信用）
+   - `AWSXRayReadOnlyAccess`（トレース確認用）
+
+2. CloudWatch Agent の traces セクションが有効になっているか確認
+   ```bash
+   sudo cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json | grep -A 5 traces
+   ```
+
+3. アプリケーションに X-Ray SDK が組み込まれているか確認
+
+### ロググループにログが出力されない
+
+1. ロググループ `/aws/ec2/sre-handson/webapp` が作成されているか確認
+   ```bash
+   aws logs describe-log-groups --log-group-name-prefix /aws/ec2/sre-handson/webapp --region ap-northeast-1
+   ```
+
+2. CloudWatch Agent の設定を確認
+   ```bash
+   sudo cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+   ```
+
+3. ログファイルが存在するか確認
+   ```bash
+   ls -la /var/log/todo-app.log
+   ```
+
+### RDS に接続できない
+
+1. RDS エンドポイントを確認
+   ```bash
+   aws cloudformation describe-stacks \
+     --stack-name sre-handson-base \
+     --region ap-northeast-1 \
+     --query 'Stacks[0].Outputs[?OutputKey==`RDSEndpoint`].OutputValue' \
+     --output text
+   ```
+
+2. セキュリティグループで EC2 から RDS へのポート 3306 が許可されているか確認
+
+3. DB 名、ユーザー名、パスワードが正しいか確認
+   - DB 名: `sreapp`
+   - ユーザー名: `admin`
+   - パスワード: CloudFormation パラメータで指定した値
+
+## よくある質問
+
+### Q. X-Ray daemon をインストールする必要はありますか？
+
+A. いいえ、不要です。CloudWatch Agent の traces セクションで X-Ray トレースを収集します。既に X-Ray daemon をインストール済みの場合は、そのまま使い続けても問題ありません。
+
+### Q. TODO アプリのポートは何番ですか？
+
+A. ポート 8080 です。ALB はポート 80 でリクエストを受け付け、ポート 8080 でバックエンドに転送します。
+
+### Q. ログストリームは手動で作成する必要がありますか？
+
+A. いいえ、CloudWatch Agent がログを送信する際に自動的に作成されます。ロググループのみ事前に作成されている必要があります（CloudFormation テンプレートで自動作成されます）。
+
+### Q. 手動でセットアップする方法はありますか？
+
+A. はい、`CLI_COMMANDS.md` に手動セットアップ手順が記載されています。ただし、CloudFormation を使った自動セットアップを推奨します。
 
 ## スタック削除（後片付け）
 
