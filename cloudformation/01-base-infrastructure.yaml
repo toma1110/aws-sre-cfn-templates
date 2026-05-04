@@ -260,7 +260,7 @@ Resources:
 
           # CloudWatch Agent設定（traces セクション追加）
           mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
-          cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'EOFCW'
+          cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/file_amazon-cloudwatch-agent.json << 'EOFCW'
           {
             "traces": {
               "traces_collected": {
@@ -305,7 +305,7 @@ Resources:
             -a fetch-config \
             -m ec2 \
             -s \
-            -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+            -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/file_amazon-cloudwatch-agent.json
 
   # ── ALB ──────────────────────────────────────────────────
   ALB:
