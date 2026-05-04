@@ -602,29 +602,23 @@ aws ssm start-session \
 # EC2内でのトラブルシューティング
 # Session Manager接続後に実行
 top                    # プロセス・CPU・メモリ確認
-htop                   # より見やすいtop（要インストール）
 df -h                  # ディスク使用量
 free -m                # メモリ使用量
-netstat -tuln          # ポート使用状況
+ss -tuln               # ポート使用状況（netstatの代替）
 journalctl -xe         # systemdログ確認
-tail -f /var/log/messages  # システムログ監視
+sudo journalctl -f     # システムログ監視（/var/log/messagesの代替）
 
-# 負荷テスト用stressコマンド
-# EPELリポジトリ有効化（Amazon Linux 2）
-sudo amazon-linux-extras install epel -y
-sudo yum install stress -y
-
-# Amazon Linux 2023の場合
-sudo yum install stress-ng -y
+# 負荷テスト用stressコマンド（Amazon Linux 2023）
+sudo dnf install stress-ng -y
 
 # CPU負荷をかける（4コア、10分間）
-stress --cpu 4 --timeout 600
+stress-ng --cpu 4 --timeout 600
 
 # メモリ負荷をかける（2GB、5分間）
-stress --vm 2 --vm-bytes 1G --timeout 300
+stress-ng --vm 2 --vm-bytes 1G --timeout 300
 
 # 負荷停止
-killall stress
+killall stress-ng
 ```
 
 ### Systems Manager Run Command (セクション7 レクチャー4)
