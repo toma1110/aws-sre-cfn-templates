@@ -72,7 +72,7 @@ Resources:
                 "title": "EC2 ディスク使用率（CloudWatch Agent）",
                 "region": "${AWS::Region}",
                 "metrics": [
-                  ["CWAgent", "disk_used_percent", "InstanceId", "${InstanceId}", "path", "/", "device", "xvda1", "fstype", "xfs"]
+                  ["CWAgent", "disk_used_percent", "InstanceId", "${InstanceId}", "path", "/", "device", "nvme0n1p1", "fstype", "xfs"]
                 ],
                 "period": 60,
                 "stat": "Average",
