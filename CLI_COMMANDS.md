@@ -123,12 +123,39 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
 # 設定ファイル確認（Agentが保存した実際のファイル）
 sudo cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/file_amazon-cloudwatch-agent.json
 
-# エージェント再起動（元の設定ファイルパスを指定）
+# エージェント再起動（設定ファイルを再作成してから実行）
+# 方法1: 設定ファイルを再作成
+sudo tee /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json > /dev/null <<'EOF'
+{
+  "traces": {
+    "traces_collected": {
+      "xray": {}
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/todo-app.log",
+            "log_group_name": "/aws/ec2/sre-handson/webapp",
+            "log_stream_name": "{instance_id}/todo-app"
+          }
+        ]
+      }
+    }
+  }
+}
+EOF
+
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
   -a fetch-config \
   -m ec2 \
   -s \
   -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+# 方法2: 既存の設定で再起動（設定変更なし）
+sudo systemctl restart amazon-cloudwatch-agent
 ```
 
 ### AWS X-Ray設定
