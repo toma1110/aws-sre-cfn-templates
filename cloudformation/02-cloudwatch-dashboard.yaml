@@ -100,12 +100,19 @@ Resources:
                 "title": "ALB 5xxエラー率",
                 "region": "${AWS::Region}",
                 "metrics": [
-                  ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", "${ALBFullName}"],
-                  ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${ALBFullName}"]
+                  [ { "expression": "(m1/m2)*100", "label": "5xxエラー率(%)", "id": "e1" } ],
+                  [ "AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", "${ALBFullName}", { "id": "m1", "visible": false } ],
+                  [ "AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${ALBFullName}", { "id": "m2", "visible": false } ]
                 ],
                 "period": 60,
                 "stat": "Sum",
-                "view": "timeSeries"
+                "view": "timeSeries",
+                "yAxis": {
+                  "left": {
+                    "min": 0,
+                    "max": 100
+                  }
+                }
               }
             },
             {
