@@ -501,13 +501,15 @@ filter remote_addr != "N/A"
 | sort requestCount desc
 | limit 20
 
--- エンドポイント別のエラー率
-filter path != "N/A"
-| stats count(*) as requests by path, status
-| stats sum(case status = 500 then requests else 0 end) as errors,
-        sum(requests) as total
-        by path
+-- エンドポイント別のエラー数
+filter path != "N/A" and status = 500
+| stats count(*) as errors by path
 | sort errors desc
+
+-- エンドポイント別の合計リクエスト数
+filter path != "N/A"
+| stats count(*) as total by path
+| sort total desc
 
 -- 遅いリクエストを検出（500ms以上）
 fields @timestamp, requestId, path, duration, status
