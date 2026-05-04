@@ -338,6 +338,110 @@ aws logs describe-metric-filters \
   --region ap-northeast-1
 ```
 
+### CloudWatch Logs Insights クエリ (セクション4 レクチャー4)
+
+**注意: Logs Insightsは主にAWSコンソールで使用しますが、CLIでも実行可能です。**
+
+#### コンソールでの使用（推奨）
+
+CloudWatch → Logs Insights → ロググループ選択 → クエリ実行
+
+#### CLI での Logs Insights クエリ実行
+
+```bash
+# ① ERRORログ検索（過去1時間）
+aws logs start-query \
+  --log-group-name /aws/ec2/sre-handson/webapp \
+  --start-time $(date -u -d '1 hour ago' +%s) \
+  --end-time $(date -u +%s) \
+  --query-string 'fields @timestamp, @message, @logStream
+| filter @message like /ERROR/
+| sort @timestamp desc
+| limit 50' \
+  --region ap-northeast-1
+
+# クエリIDを取得（上記コマンドの出力から queryId をコピー）
+QUERY_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# クエリ結果を取得
+aws logs get-query-results \
+  --query-id $QUERY_ID \
+  --region ap-northeast-1
+
+# ② requestIdで絞り込み（YOUR_REQUEST_IDを実際の値に置き換え）
+aws logs start-query \
+  --log-group-name /aws/ec2/sre-handson/webapp \
+  --start-time $(date -u -d '1 hour ago' +%s) \
+  --end-time $(date -u +%s) \
+  --query-string 'fields @timestamp, @message
+| filter @requestId = "YOUR_REQUEST_ID"
+| sort @timestamp asc' \
+  --region ap-northeast-1
+
+# ③ 5分ごとのエラー件数集計
+aws logs start-query \
+  --log-group-name /aws/ec2/sre-handson/webapp \
+  --start-time $(date -u -d '3 hours ago' +%s) \
+  --end-time $(date -u +%s) \
+  --query-string 'filter @message like /ERROR/
+| stats count(*) as errorCount by bin(5m)
+| sort @timestamp asc' \
+  --region ap-northeast-1
+
+# ④ Lambda コールドスタート分析（Lambdaログの場合）
+aws logs start-query \
+  --log-group-name /aws/lambda/your-function-name \
+  --start-time $(date -u -d '24 hours ago' +%s) \
+  --end-time $(date -u +%s) \
+  --query-string 'filter @type = "REPORT"
+| stats avg(@initDuration) as avgInit, pct(@initDuration, 99) as p99Init, count(*) as invocations by bin(1h)' \
+  --region ap-northeast-1
+```
+
+#### よく使うLogs Insightsクエリパターン
+
+```sql
+-- ERRORログを新しい順に50件取得
+fields @timestamp, @message, @logStream
+| filter @message like /ERROR/
+| sort @timestamp desc
+| limit 50
+
+-- 特定のrequestIdに関連するすべてのログを時系列で表示
+fields @timestamp, @message
+| filter @requestId = "YOUR_REQUEST_ID"
+| sort @timestamp asc
+
+-- 5分ごとのエラー件数を集計
+filter @message like /ERROR/
+| stats count(*) as errorCount by bin(5m)
+| sort @timestamp asc
+
+-- レスポンスタイムの統計（平均、最大、P99）
+filter @type = "REPORT"
+| stats avg(@duration), max(@duration), pct(@duration, 99) by bin(5m)
+
+-- 特定のステータスコードをカウント
+fields @timestamp, status
+| filter status = 500
+| stats count() as count500 by bin(1h)
+
+-- IPアドレス別のリクエスト数
+fields @timestamp, remote_addr
+| stats count() as requestCount by remote_addr
+| sort requestCount desc
+| limit 20
+```
+
+#### Logs Insights クエリのヒント
+
+- `@timestamp`, `@message`, `@logStream` は予約フィールド
+- `like /PATTERN/` は正規表現マッチング（大文字小文字区別あり）
+- `bin(5m)` は5分単位で集計（1m, 1h, 1d なども可能）
+- `pct(field, 99)` は99パーセンタイル値を計算
+- `stats` で集計、`sort` でソート、`limit` で件数制限
+- タイムスタンプはUTC表示（日本時間 -9時間）
+
 ---
 
 ## セクション5: アラート設定
