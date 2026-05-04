@@ -195,7 +195,72 @@ aws cloudformation deploy \
     ALBFullName=app/sre-handson-alb/xxxxxxxxxx
 ```
 
-### カスタムメトリクス送信 (セクション3)
+### カスタムメトリクス送信 (セクション3 レクチャー5)
+
+**注意: このセクションではAWS CLIとPythonのboto3を使ってカスタムメトリクスを送信します。CloudFormationテンプレート (03-custom-metrics.yaml) はオプションです。**
+
+#### 方法1: Python (boto3) でカスタムメトリクスを送信
+
+```bash
+# boto3インストール（必要な場合）
+pip install boto3
+
+# Pythonスクリプト作成
+cat > send_metrics.py <<'EOF'
+import boto3
+from datetime import datetime
+
+client = boto3.client('cloudwatch', region_name='ap-northeast-1')
+
+client.put_metric_data(
+    Namespace='MyApp/Production',
+    MetricData=[
+        {
+            'MetricName': 'ErrorCount',
+            'Dimensions': [
+                {
+                    'Name': 'ServiceName',
+                    'Value': 'OrderService'
+                }
+            ],
+            'Timestamp': datetime.utcnow(),
+            'Value': 5.0,
+            'Unit': 'Count'
+        }
+    ]
+)
+
+print('✅ カスタムメトリクスを送信しました')
+EOF
+
+# 実行
+python send_metrics.py
+```
+
+#### 方法2: AWS CLI でカスタムメトリクスを送信
+
+```bash
+# CloudShellまたはローカル環境から実行
+aws cloudwatch put-metric-data \
+  --namespace "MyApp/Production" \
+  --metric-name "ErrorCount" \
+  --dimensions "Name=ServiceName,Value=OrderService" \
+  --value 3 \
+  --unit Count \
+  --region ap-northeast-1
+
+# 複数メトリクスをまとめて送信
+aws cloudwatch put-metric-data \
+  --namespace "MyApp/Production" \
+  --metric-data \
+    'MetricName=ErrorCount,Value=2,Unit=Count' \
+    'MetricName=ResponseTime,Value=320,Unit=Milliseconds' \
+  --region ap-northeast-1
+```
+
+#### 方法3 (オプション): Lambda関数でカスタムメトリクスを自動送信
+
+CloudFormationテンプレートを使用してLambda関数を作成し、定期的にカスタムメトリクスを送信することもできます。
 
 ```bash
 # Lambda関数デプロイ
@@ -205,20 +270,32 @@ aws cloudformation deploy \
   --region ap-northeast-1 \
   --capabilities CAPABILITY_NAMED_IAM
 
-# メトリクス確認
+# Lambda関数を手動実行してテスト
+aws lambda invoke \
+  --function-name sre-handson-metric-sender \
+  --region ap-northeast-1 \
+  /tmp/lambda-output.json
+
+cat /tmp/lambda-output.json
+```
+
+#### メトリクス確認
+
+```bash
+# カスタムメトリクス一覧
 aws cloudwatch list-metrics \
-  --namespace "SRE/Handson" \
+  --namespace "MyApp/Production" \
   --region ap-northeast-1
 
 # メトリクスデータ取得
 aws cloudwatch get-metric-statistics \
-  --namespace "SRE/Handson" \
-  --metric-name ActiveConnections \
-  --dimensions Name=Environment,Value=Production \
-  --start-time 2024-01-01T00:00:00Z \
-  --end-time 2024-01-01T23:59:59Z \
-  --period 3600 \
-  --statistics Average \
+  --namespace "MyApp/Production" \
+  --metric-name ErrorCount \
+  --dimensions Name=ServiceName,Value=OrderService \
+  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+  --period 300 \
+  --statistics Sum Average \
   --region ap-northeast-1
 ```
 
