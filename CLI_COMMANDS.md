@@ -608,7 +608,7 @@ ss -tuln               # ポート使用状況（netstatの代替）
 journalctl -xe         # systemdログ確認
 sudo journalctl -f     # システムログ監視（/var/log/messagesの代替）
 
-# 負荷テスト用stressコマンド（Amazon Linux 2023）
+# 負荷テスト用stress-ngコマンド（Amazon Linux 2023）
 sudo dnf install stress-ng -y
 
 # ホームディレクトリに移動（stress-ngは書き込み可能なディレクトリが必要）
