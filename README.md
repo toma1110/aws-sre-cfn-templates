@@ -2,6 +2,17 @@
 
 Udemy コース **「【AWS SRE実践】構築から運用へ」** のハンズオン用 CloudFormation テンプレート集です。
 
+## 最初に見る資料
+
+ハンズオンの全体像がつかみにくい場合は、先に以下の補助資料を確認してください。
+
+| 資料 | 内容 |
+|---|---|
+| [ハンズオン構成図](./docs/ARCHITECTURE.md) | CloudFormationで作成されるAWSリソースと監視データの流れ |
+| [ハンズオン全体フロー](./docs/HANDSON_FLOW.md) | 01から06までの操作順と、各ステップで見る画面 |
+| [CloudWatchの見方](./docs/CLOUDWATCH_GUIDE.md) | Dashboard / Logs Insights / Metric Filter / Alarm の使い分け |
+| [ログとメトリクスの読み取り例](./docs/SIGNAL_EXAMPLES.md) | 正常系・異常系ログ、Logs Insightsクエリ、メトリクス確認CLI |
+
 ## 使い方
 
 各テンプレートは番号順にデプロイしてください。
@@ -42,14 +53,27 @@ aws cloudformation deploy \
     DBPassword=YourPassword123 \
     KeyName=your-key-pair-name
 
+# 01のOutputsから後続スタック用の値を取得
+INSTANCE_ID=$(aws cloudformation describe-stacks \
+  --stack-name sre-handson-base \
+  --region ap-northeast-1 \
+  --query "Stacks[0].Outputs[?OutputKey=='AppInstanceId'].OutputValue" \
+  --output text)
+
+ALB_FULL_NAME=$(aws cloudformation describe-stacks \
+  --stack-name sre-handson-base \
+  --region ap-northeast-1 \
+  --query "Stacks[0].Outputs[?OutputKey=='ALBFullName'].OutputValue" \
+  --output text)
+
 # 02: ダッシュボード（01のOutputsを参照）
 aws cloudformation deploy \
   --template-file 02-cloudwatch-dashboard.yaml \
   --stack-name sre-handson-dashboard \
   --region ap-northeast-1 \
   --parameter-overrides \
-    InstanceId=i-xxxxxxxxxxxxxxxxx \
-    ALBFullName=app/sre-handson-alb/xxxxxxxxxx
+    InstanceId="${INSTANCE_ID}" \
+    ALBFullName="${ALB_FULL_NAME}"
 
 # 03: カスタムメトリクス
 aws cloudformation deploy \
@@ -73,8 +97,8 @@ aws cloudformation deploy \
   --parameter-overrides \
     SlackWebhookURL=https://hooks.slack.com/services/xxx \
     NotificationEmail=your@email.com \
-    InstanceId=i-xxxxxxxxxxxxxxxxx \
-    ALBFullName=app/sre-handson-alb/xxxxxxxxxx
+    InstanceId="${INSTANCE_ID}" \
+    ALBFullName="${ALB_FULL_NAME}"
 
 # 06: コストアラート（us-east-1 でデプロイ）
 aws cloudformation deploy \

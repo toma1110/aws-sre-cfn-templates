@@ -8,8 +8,7 @@ Parameters:
 
   ALBFullName:
     Type: String
-    Default: app/sre-handson-alb/b4281246e77237f4
-    Description: ALB LoadBalancer identifier (app/name/hash format)
+    Description: ALB full name from 01-base-infrastructure Outputs (app/name/hash format)
 
   DBIdentifier:
     Type: String

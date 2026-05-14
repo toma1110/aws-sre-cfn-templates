@@ -499,6 +499,10 @@ Outputs:
     Description: ALB Endpoint URL
     Value: !Sub http://${ALB.DNSName}
 
+  ALBFullName:
+    Description: ALB full name for CloudWatch ApplicationELB metrics
+    Value: !GetAtt ALB.LoadBalancerFullName
+
   AppInstanceId:
     Description: EC2 Instance ID
     Value: !Ref AppInstance

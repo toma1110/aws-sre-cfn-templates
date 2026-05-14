@@ -2,6 +2,13 @@
 
 Udemy講座「AWS SRE実践」で使用するCLIコマンドのリファレンスです。
 
+操作の前に全体像を確認したい場合は、以下を先に読んでください。
+
+- [ハンズオン構成図](./docs/ARCHITECTURE.md)
+- [ハンズオン全体フロー](./docs/HANDSON_FLOW.md)
+- [CloudWatchの見方](./docs/CLOUDWATCH_GUIDE.md)
+- [ログとメトリクスの読み取り例](./docs/SIGNAL_EXAMPLES.md)
+
 ---
 
 ## セクション2: 基盤構築
@@ -37,6 +44,22 @@ aws cloudformation describe-stacks \
   --stack-name sre-handson-base \
   --region ap-northeast-1 \
   --query 'Stacks[0].Outputs'
+
+# 後続スタックで使う値を取得
+INSTANCE_ID=$(aws cloudformation describe-stacks \
+  --stack-name sre-handson-base \
+  --region ap-northeast-1 \
+  --query "Stacks[0].Outputs[?OutputKey=='AppInstanceId'].OutputValue" \
+  --output text)
+
+ALB_FULL_NAME=$(aws cloudformation describe-stacks \
+  --stack-name sre-handson-base \
+  --region ap-northeast-1 \
+  --query "Stacks[0].Outputs[?OutputKey=='ALBFullName'].OutputValue" \
+  --output text)
+
+echo "InstanceId=${INSTANCE_ID}"
+echo "ALBFullName=${ALB_FULL_NAME}"
 ```
 
 ### TODO アプリの動作確認
@@ -203,8 +226,8 @@ aws cloudformation deploy \
   --stack-name sre-handson-dashboard \
   --region ap-northeast-1 \
   --parameter-overrides \
-    InstanceId=i-xxxxxxxxxxxxxxxxx \
-    ALBFullName=app/sre-handson-alb/xxxxxxxxxx
+    InstanceId="${INSTANCE_ID}" \
+    ALBFullName="${ALB_FULL_NAME}"
 ```
 
 ### カスタムメトリクス送信 (セクション3 レクチャー5)
@@ -542,8 +565,8 @@ aws cloudformation deploy \
   --parameter-overrides \
     SlackWebhookURL=https://hooks.slack.com/services/xxx \
     NotificationEmail=your@email.com \
-    InstanceId=i-xxxxxxxxxxxxxxxxx \
-    ALBFullName=app/sre-handson-alb/xxxxxxxxxx
+    InstanceId="${INSTANCE_ID}" \
+    ALBFullName="${ALB_FULL_NAME}"
 ```
 
 ### アラーム操作 (セクション5)
@@ -554,12 +577,12 @@ aws cloudwatch describe-alarms --region ap-northeast-1
 
 # 特定アラームの詳細
 aws cloudwatch describe-alarms \
-  --alarm-names "sre-handson-high-cpu" \
+  --alarm-names "sre-handson-cpu-high" \
   --region ap-northeast-1
 
 # アラーム履歴
 aws cloudwatch describe-alarm-history \
-  --alarm-name "sre-handson-high-cpu" \
+  --alarm-name "sre-handson-cpu-high" \
   --region ap-northeast-1
 
 # アラームテスト（手動でアラーム状態に変更）
