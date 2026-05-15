@@ -175,55 +175,55 @@
         <mxCell id="edge-cfn-alb" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="01 creates" edge="1" parent="1" source="svc-group-cfn" target="svc-group-alb">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-cfn-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="02-05 create observability" edge="1" parent="1" source="svc-group-cfn" target="svc-group-cw">
+        <mxCell id="edge-cfn-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-cfn" target="svc-group-cw">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="edge-user-alb" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#007CBD;fontFamily=Helvetica;fontSize=11;" value="HTTP requests" edge="1" parent="1" source="users-container" target="svc-group-alb">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-alb-ec2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#8C4FFF;fontFamily=Helvetica;fontSize=11;" value="forward :8080" edge="1" parent="1" source="svc-group-alb" target="svc-group-ec2">
+        <mxCell id="edge-alb-ec2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#8C4FFF;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-alb" target="svc-group-ec2">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-ec2-rds" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#C925D1;fontFamily=Helvetica;fontSize=11;dashed=1;" value="DB security path" edge="1" parent="1" source="svc-group-ec2" target="svc-group-rds">
+        <mxCell id="edge-ec2-rds" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#C925D1;fontFamily=Helvetica;fontSize=11;dashed=1;" value="" edge="1" parent="1" source="svc-group-ec2" target="svc-group-rds">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-ec2-logs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="JSON logs" edge="1" parent="1" source="svc-group-ec2" target="svc-group-logs">
+        <mxCell id="edge-ec2-logs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-ec2" target="svc-group-logs">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-ec2-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="CPU / memory / disk / traces" edge="1" parent="1" source="svc-group-ec2" target="svc-group-cw">
+        <mxCell id="edge-ec2-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-ec2" target="svc-group-cw">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-alb-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="RequestCount / 5xx / latency" edge="1" parent="1" source="svc-group-alb" target="svc-group-cw">
+        <mxCell id="edge-alb-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-alb" target="svc-group-cw">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-rds-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="RDS metrics" edge="1" parent="1" source="svc-group-rds" target="svc-group-cw">
+        <mxCell id="edge-rds-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-rds" target="svc-group-cw">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-logs-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="Metric filters" edge="1" parent="1" source="svc-group-logs" target="svc-group-cw">
+        <mxCell id="edge-logs-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-logs" target="svc-group-cw">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="edge-event-lambda" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#E7157B;fontFamily=Helvetica;fontSize=11;" value="every minute" edge="1" parent="1" source="svc-group-eventbridge" target="svc-group-lambda-metrics">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-lambda-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#ED7100;fontFamily=Helvetica;fontSize=11;" value="PutMetricData" edge="1" parent="1" source="svc-group-lambda-metrics" target="svc-group-cw">
+        <mxCell id="edge-lambda-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#ED7100;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-lambda-metrics" target="svc-group-cw">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-cw-sns" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#E7157B;fontFamily=Helvetica;fontSize=11;" value="AlarmActions" edge="1" parent="1" source="svc-group-cw" target="svc-group-sns">
+        <mxCell id="edge-cw-sns" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#E7157B;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-cw" target="svc-group-sns">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-sns-lambda" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#E7157B;fontFamily=Helvetica;fontSize=11;" value="invoke" edge="1" parent="1" source="svc-group-sns" target="svc-group-slack-lambda">
+        <mxCell id="edge-sns-lambda" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#E7157B;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-sns" target="svc-group-slack-lambda">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-lambda-recipient" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#E7157B;fontFamily=Helvetica;fontSize=11;" value="Slack message" edge="1" parent="1" source="svc-group-slack-lambda" target="recipient-container">
+        <mxCell id="edge-lambda-recipient" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#E7157B;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-slack-lambda" target="recipient-container">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-sns-recipient" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#E7157B;fontFamily=Helvetica;fontSize=11;dashed=1;" value="email" edge="1" parent="1" source="svc-group-sns" target="recipient-container">
+        <mxCell id="edge-sns-recipient" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#E7157B;fontFamily=Helvetica;fontSize=11;dashed=1;" value="" edge="1" parent="1" source="svc-group-sns" target="recipient-container">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-budget-sns" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="budget notification" edge="1" parent="1" source="svc-group-budget" target="svc-group-sns">
+        <mxCell id="edge-budget-sns" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-budget" target="svc-group-sns">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge-cost-recipient" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="daily anomaly email" edge="1" parent="1" source="svc-group-cost" target="recipient-container">
+        <mxCell id="edge-cost-recipient" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#666666;fontFamily=Helvetica;fontSize=11;" value="" edge="1" parent="1" source="svc-group-cost" target="recipient-container">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>

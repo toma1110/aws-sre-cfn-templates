@@ -5,9 +5,14 @@
 ## 全体構成
 
 - draw.io版: [architecture.drawio](./architecture.drawio)
+- PNG版: [architecture.png](./architecture.png)
 - 手順全体: [HANDSON_FLOW.md](./HANDSON_FLOW.md)
 - CloudWatchの見方: [CLOUDWATCH_GUIDE.md](./CLOUDWATCH_GUIDE.md)
 - ログとメトリクスの読み取り例: [SIGNAL_EXAMPLES.md](./SIGNAL_EXAMPLES.md)
+
+## 構成図プレビュー
+
+![AWS SRE Hands-on architecture](./architecture.png)
 
 ## スタック別に作成されるもの
 
@@ -66,4 +71,3 @@ ALB_FULL_NAME=$(aws cloudformation describe-stacks \
 - `06-cost-alerts.yaml` だけは `us-east-1` にデプロイします。
 - RDS `db.t3.micro` は起動中に費用が発生します。
 - ハンズオン終了後は、番号の逆順にスタックを削除してください。
-- この図解はPublicリポジトリの補助資料です。完成動画へ流用する場合は、必ずGPT-Image2由来のPNGとして作り直してください。
