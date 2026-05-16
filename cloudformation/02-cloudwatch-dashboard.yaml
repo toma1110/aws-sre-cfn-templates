@@ -27,14 +27,14 @@ Resources:
               "type": "text",
               "x": 0, "y": 0, "width": 24, "height": 1,
               "properties": {
-                "markdown": "# SRE ハンズオン ダッシュボード\nEC2 / ALB / RDS の主要メトリクスを一覧で確認できます"
+                "markdown": "# SRE Hands-on Dashboard\nReview key EC2, ALB, and RDS metrics in one place."
               }
             },
             {
               "type": "metric",
               "x": 0, "y": 1, "width": 8, "height": 6,
               "properties": {
-                "title": "EC2 CPU使用率",
+                "title": "EC2 CPU Utilization",
                 "region": "${AWS::Region}",
                 "metrics": [
                   ["AWS/EC2", "CPUUtilization", "InstanceId", "${InstanceId}"]
@@ -43,7 +43,7 @@ Resources:
                 "stat": "Average",
                 "view": "timeSeries",
                 "annotations": {
-                  "horizontal": [{"value": 80, "label": "警告ライン", "color": "#ff7f0e"}]
+                  "horizontal": [{"value": 80, "label": "Warning line", "color": "#ff7f0e"}]
                 }
               }
             },
@@ -51,7 +51,7 @@ Resources:
               "type": "metric",
               "x": 8, "y": 1, "width": 8, "height": 6,
               "properties": {
-                "title": "EC2 メモリ使用率（CloudWatch Agent）",
+                "title": "EC2 Memory Utilization (CloudWatch Agent)",
                 "region": "${AWS::Region}",
                 "metrics": [
                   ["CWAgent", "mem_used_percent", "InstanceId", "${InstanceId}"]
@@ -60,7 +60,7 @@ Resources:
                 "stat": "Average",
                 "view": "timeSeries",
                 "annotations": {
-                  "horizontal": [{"value": 85, "label": "警告ライン", "color": "#ff7f0e"}]
+                  "horizontal": [{"value": 85, "label": "Warning line", "color": "#ff7f0e"}]
                 }
               }
             },
@@ -68,7 +68,7 @@ Resources:
               "type": "metric",
               "x": 16, "y": 1, "width": 8, "height": 6,
               "properties": {
-                "title": "EC2 ディスク使用率（CloudWatch Agent）",
+                "title": "EC2 Disk Utilization (CloudWatch Agent)",
                 "region": "${AWS::Region}",
                 "metrics": [
                   ["CWAgent", "disk_used_percent", "InstanceId", "${InstanceId}", "path", "/", "device", "nvme0n1p1", "fstype", "xfs"]
@@ -82,7 +82,7 @@ Resources:
               "type": "metric",
               "x": 0, "y": 7, "width": 8, "height": 6,
               "properties": {
-                "title": "ALB リクエスト数",
+                "title": "ALB Request Count",
                 "region": "${AWS::Region}",
                 "metrics": [
                   ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${ALBFullName}"]
@@ -96,10 +96,10 @@ Resources:
               "type": "metric",
               "x": 8, "y": 7, "width": 8, "height": 6,
               "properties": {
-                "title": "ALB 5xxエラー率",
+                "title": "ALB 5xx Error Rate",
                 "region": "${AWS::Region}",
                 "metrics": [
-                  [ { "expression": "(m1/m2)*100", "label": "5xxエラー率(%)", "id": "e1" } ],
+                  [ { "expression": "(m1/m2)*100", "label": "5xx error rate (%)", "id": "e1" } ],
                   [ "AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "LoadBalancer", "${ALBFullName}", { "id": "m1", "visible": false } ],
                   [ "AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${ALBFullName}", { "id": "m2", "visible": false } ]
                 ],
@@ -118,7 +118,7 @@ Resources:
               "type": "metric",
               "x": 16, "y": 7, "width": 8, "height": 6,
               "properties": {
-                "title": "ALB レスポンスタイム（P99）",
+                "title": "ALB Response Time (p99)",
                 "region": "${AWS::Region}",
                 "metrics": [
                   ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", "${ALBFullName}"]
@@ -127,7 +127,7 @@ Resources:
                 "stat": "p99",
                 "view": "timeSeries",
                 "annotations": {
-                  "horizontal": [{"value": 1, "label": "SLO: 1秒以内", "color": "#d62728"}]
+                  "horizontal": [{"value": 1, "label": "SLO: within 1 second", "color": "#d62728"}]
                 }
               }
             },
@@ -135,7 +135,7 @@ Resources:
               "type": "metric",
               "x": 0, "y": 13, "width": 8, "height": 6,
               "properties": {
-                "title": "RDS CPU使用率",
+                "title": "RDS CPU Utilization",
                 "region": "${AWS::Region}",
                 "metrics": [
                   ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "${DBIdentifier}"]
@@ -149,7 +149,7 @@ Resources:
               "type": "metric",
               "x": 8, "y": 13, "width": 8, "height": 6,
               "properties": {
-                "title": "RDS コネクション数",
+                "title": "RDS Database Connections",
                 "region": "${AWS::Region}",
                 "metrics": [
                   ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", "${DBIdentifier}"]
@@ -163,7 +163,7 @@ Resources:
               "type": "metric",
               "x": 16, "y": 13, "width": 8, "height": 6,
               "properties": {
-                "title": "RDS 空きストレージ",
+                "title": "RDS Free Storage",
                 "region": "${AWS::Region}",
                 "metrics": [
                   ["AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", "${DBIdentifier}"]
