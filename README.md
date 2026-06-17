@@ -1,248 +1,141 @@
-# aws-sre-handson
+# AWS SRE実践ハンズオン
 
-Udemy コース **「【AWS SRE実践】構築から運用へ」** のハンズオン用 CloudFormation テンプレート集です。
+Udemyコース **AWS SRE実践講座: CloudWatch・SLO・インシデント対応・コスト最適化** のハンズオン教材です。
 
-## 最初に見る資料
+このリポジトリでは、AWS上に小さなWebアプリ環境を作り、CloudWatchでメトリクス、ログ、アラーム、インシデント対応、コスト通知までを一通り体験します。
 
-ハンズオンの全体像がつかみにくい場合は、先に以下の補助資料を確認してください。
+## 最初に読むもの
 
-| 資料 | 内容 |
-|---|---|
-| [ハンズオン構成図](./docs/ARCHITECTURE.md) | CloudFormationで作成されるAWSリソースと監視データの流れ |
-| [ハンズオン全体フロー](./docs/HANDSON_FLOW.md) | 01から06までの操作順と、各ステップで見る画面 |
-| [CloudWatchの見方](./docs/CLOUDWATCH_GUIDE.md) | Dashboard / Logs Insights / Metric Filter / Alarm の使い分け |
-| [ログとメトリクスの読み取り例](./docs/SIGNAL_EXAMPLES.md) | 正常系・異常系ログ、Logs Insightsクエリ、メトリクス確認CLI |
+| 順番 | 資料 | 目的 |
+| --- | --- | --- |
+| 1 | [環境準備](labs/00-environment-setup.md) | CloudShell、リージョン、料金注意、事前確認 |
+| 2 | [サンプルアプリをデプロイ](labs/01-deploy-sample-app.md) | VPC、ALB、EC2、RDS、ログ基盤を作る |
+| 3 | [後片付け](labs/99-cleanup.md) | 作成したスタックを削除して課金を止める |
 
-## 使い方
-
-各テンプレートは番号順にデプロイしてください。
-
-```
-01 → 02 → 03 → 04 → 05 → 06
-```
-
-| ファイル | 対応セクション | 内容 |
-|---|---|---|
-| `01-base-infrastructure.yaml` | セクション2 | VPC / EC2 / ALB / RDS の基盤構築 |
-| `02-cloudwatch-dashboard.yaml` | セクション3 | CloudWatch ダッシュボード作成 |
-| `03-custom-metrics.yaml` | セクション3 | Lambda でカスタムメトリクスを送信 |
-| `04-log-metric-filter.yaml` | セクション4 | CloudWatch Logs メトリクスフィルター |
-| `05-alarms-sns.yaml` | セクション5 | CloudWatch Alarms + Slack 通知 |
-| `06-cost-alerts.yaml` | セクション9 | Budgets + Cost Anomaly Detection |
-
-> **注意**: 現在の動画では `01-base-infrastructure.yaml` を使用します。互換性のため `sre-handson-base.yml` はシンボリックリンクとして残してあります（どちらを使っても同じです）。
-
-## デプロイ方法
-
-### AWS コンソールから
-
-1. [CloudFormation コンソール](https://ap-northeast-1.console.aws.amazon.com/cloudformation/home) を開く
-2. 「スタックの作成」→「テンプレートファイルのアップロード」
-3. 番号順にデプロイ
-
-### AWS CLI から
+迷ったら、まず `scripts/00_preflight.sh` を実行してください。
 
 ```bash
-# 01: 基盤構築
-aws cloudformation deploy \
-  --template-file 01-base-infrastructure.yaml \
-  --stack-name sre-handson-base \
-  --region ap-northeast-1 \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --parameter-overrides \
-    DBPassword=YourPassword123 \
-    KeyName=your-key-pair-name
-
-# 01のOutputsから後続スタック用の値を取得
-INSTANCE_ID=$(aws cloudformation describe-stacks \
-  --stack-name sre-handson-base \
-  --region ap-northeast-1 \
-  --query "Stacks[0].Outputs[?OutputKey=='AppInstanceId'].OutputValue" \
-  --output text)
-
-ALB_FULL_NAME=$(aws cloudformation describe-stacks \
-  --stack-name sre-handson-base \
-  --region ap-northeast-1 \
-  --query "Stacks[0].Outputs[?OutputKey=='ALBFullName'].OutputValue" \
-  --output text)
-
-# 02: ダッシュボード（01のOutputsを参照）
-aws cloudformation deploy \
-  --template-file 02-cloudwatch-dashboard.yaml \
-  --stack-name sre-handson-dashboard \
-  --region ap-northeast-1 \
-  --parameter-overrides \
-    InstanceId="${INSTANCE_ID}" \
-    ALBFullName="${ALB_FULL_NAME}"
-
-# 03: カスタムメトリクス
-aws cloudformation deploy \
-  --template-file 03-custom-metrics.yaml \
-  --stack-name sre-handson-custom-metrics \
-  --region ap-northeast-1 \
-  --capabilities CAPABILITY_NAMED_IAM
-
-# 04: ログメトリクスフィルター
-aws cloudformation deploy \
-  --template-file 04-log-metric-filter.yaml \
-  --stack-name sre-handson-log-filter \
-  --region ap-northeast-1
-
-# 05: アラーム + Slack通知
-aws cloudformation deploy \
-  --template-file 05-alarms-sns.yaml \
-  --stack-name sre-handson-alarms \
-  --region ap-northeast-1 \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --parameter-overrides \
-    SlackWebhookURL=https://hooks.slack.com/services/xxx \
-    NotificationEmail=your@email.com \
-    InstanceId="${INSTANCE_ID}" \
-    ALBFullName="${ALB_FULL_NAME}"
-
-# 06: コストアラート（us-east-1 でデプロイ）
-aws cloudformation deploy \
-  --template-file 06-cost-alerts.yaml \
-  --stack-name sre-handson-cost \
-  --region us-east-1 \
-  --parameter-overrides \
-    NotificationEmail=your@email.com \
-    MonthlyBudgetAmount=20
+cd aws-sre-cfn-templates
+bash scripts/00_preflight.sh
 ```
 
-## 注意事項
+## 推奨環境
 
-- **リージョン**: `ap-northeast-1`（東京）を推奨。`06-cost-alerts.yaml` のみ `us-east-1` が必要
-- **費用**: ハンズオン終了後はスタックを削除して課金を止めてください
-- **RDS**: `01-base-infrastructure.yaml` の RDS は `db.t3.micro` ですが、起動中は料金が発生します
-- **アプリケーション**: `01-base-infrastructure.yaml` を実行すると、JSON形式のログを出力するFlaskアプリが自動的にセットアップされます
+- AWS CloudShell
+- リージョン: `ap-northeast-1`
+- AWS CLIが利用できること
+- CloudFormation、EC2、RDS、ALB、CloudWatch、SNS、Lambda、Budgetsを作成できる権限
 
-## 前提条件
+ローカルPCでも実行できますが、講座ではCloudShellを推奨します。アクセスキー管理やツール差分を減らせるためです。
 
-- AWS アカウント
-- EC2 キーペア（SSH 接続用）
-- AWS CLI がインストール済み（CLI を使う場合）
-- 基本的な Linux コマンドの知識
+## 料金と削除
+
+このハンズオンは、EC2、RDS、ALB、CloudWatch、Lambda、SNS、Budgetsなどを使います。無料枠内に収まらない場合や、削除忘れがある場合は料金が発生します。
+
+作業が終わったら必ず以下を実行してください。
+
+```bash
+bash scripts/99_cleanup.sh
+```
+
+削除対象を確認してから進むため、誤操作を避けやすくしています。
+
+## ハンズオン全体の流れ
+
+| 講義 | ラボ | 実行スクリプト |
+| --- | --- | --- |
+| `s1-l4` 環境セットアップ | [00 環境準備](labs/00-environment-setup.md) | `scripts/00_preflight.sh` |
+| `s3-l5` サンプルWebアプリをデプロイ | [01 サンプルアプリをデプロイ](labs/01-deploy-sample-app.md) | `scripts/01_deploy_base.sh` |
+| `s4-l4` ダッシュボードを作る | [02 ダッシュボード](labs/02-dashboard.md) | `scripts/03_deploy_dashboard.sh` |
+| `s4-l5` カスタムメトリクスを送信 | [03 カスタムメトリクス](labs/03-custom-metrics.md) | `scripts/04_deploy_custom_metrics.sh` |
+| `s5-l4` Logs Insightsでエラーを探す | [04 Logs Insights](labs/04-logs-insights.md) | `scripts/05_logs_insights_examples.sh` |
+| `s5-l5` ログメトリクスフィルター | [05 メトリクスフィルター](labs/05-log-metric-filter.md) | `scripts/06_deploy_metric_filter.sh` |
+| `s6-l4`, `s6-l5` アラート通知 | [06 アラームと通知](labs/06-alarms-and-notification.md) | `scripts/07_deploy_alarms.sh` |
+| `s7-l4`, `s8-l4` SLOと模擬インシデント | [07 SLOとインシデント演習](labs/07-slo-and-incident-drill.md) | `scripts/08_incident_drill.sh` |
+| `s9-l3` ポストモーテム | [08 ポストモーテム](labs/08-postmortem.md) | テンプレート利用 |
+| `s10-l4` コストアラート | [09 コストアラート](labs/09-cost-alerts.md) | `scripts/09_deploy_cost_alerts.sh` |
+
+## クイックスタート
+
+```bash
+# 0. 事前確認
+bash scripts/00_preflight.sh
+
+# 1. 基盤を作成
+export KEY_NAME="your-key-pair-name"
+bash scripts/01_deploy_base.sh
+
+# 2. アプリにリクエストを流す
+bash scripts/02_generate_traffic.sh
+
+# 3. ダッシュボードを作成
+bash scripts/03_deploy_dashboard.sh
+
+# 4. カスタムメトリクスを作成
+bash scripts/04_deploy_custom_metrics.sh
+
+# 5. Logs Insightsを試す
+bash scripts/05_logs_insights_examples.sh
+
+# 6. ログをメトリクス化
+bash scripts/06_deploy_metric_filter.sh
+
+# 7. アラームと通知を作成
+export NOTIFICATION_EMAIL="your@example.com"
+export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
+bash scripts/07_deploy_alarms.sh
+
+# 8. 模擬インシデント演習
+bash scripts/08_incident_drill.sh
+
+# 9. コスト通知を作成
+bash scripts/09_deploy_cost_alerts.sh
+
+# 10. 後片付け
+bash scripts/99_cleanup.sh
+```
+
+## 旧資料
+
+以下の資料は参照用として残しています。
+
+- [CLI_COMMANDS.md](CLI_COMMANDS.md)
+- [ハンズオン全体フロー](docs/HANDSON_FLOW.md)
+- [CloudWatchの見方](docs/CLOUDWATCH_GUIDE.md)
+- [ログとメトリクスの読み取り例](docs/SIGNAL_EXAMPLES.md)
+- [SLOドキュメントテンプレート](slo-document-template.md)
+- [ポストモーテムテンプレート](postmortem-template.md)
+
+新しく進める場合は、`labs/` と `scripts/` を優先してください。
 
 ## トラブルシューティング
 
-### アプリケーションにアクセスできない
+### CloudFormationが失敗する
 
-1. CloudFormation スタックが正常に作成されたか確認
-   ```bash
-   aws cloudformation describe-stacks --stack-name sre-handson-base --region ap-northeast-1
-   ```
-
-2. EC2 インスタンスが起動しているか確認
-   ```bash
-   aws ec2 describe-instances --instance-ids <Instance-ID> --region ap-northeast-1
-   ```
-
-3. アプリケーションのサービスが起動しているか確認（EC2 に SSH 接続後）
-   ```bash
-   sudo systemctl status todo-app
-   sudo tail -f /var/log/todo-app.log
-   ```
-
-4. セキュリティグループで ALB からポート 8080 が許可されているか確認
-
-### CloudWatch Agent が動作しない
-
-1. CloudWatch Agent のステータス確認
-   ```bash
-   sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a status -m ec2
-   ```
-
-2. CloudWatch Agent のログ確認
-   ```bash
-   sudo tail -f /opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log
-   ```
-
-3. IAM ロールに `CloudWatchAgentServerPolicy` が付与されているか確認
-
-### X-Ray トレースが表示されない
-
-1. IAM ロールに以下のポリシーが付与されているか確認
-   - `AWSXRayDaemonWriteAccess`（トレース送信用）
-   - `AWSXRayReadOnlyAccess`（トレース確認用）
-
-2. CloudWatch Agent の traces セクションが有効になっているか確認
-   ```bash
-   sudo cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json | grep -A 5 traces
-   ```
-
-3. アプリケーションに X-Ray SDK が組み込まれているか確認
-
-### ロググループにログが出力されない
-
-1. ロググループ `/aws/ec2/sre-handson/webapp` が作成されているか確認
-   ```bash
-   aws logs describe-log-groups --log-group-name-prefix /aws/ec2/sre-handson/webapp --region ap-northeast-1
-   ```
-
-2. CloudWatch Agent の設定を確認
-   ```bash
-   sudo cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-   ```
-
-3. ログファイルが存在するか確認
-   ```bash
-   ls -la /var/log/todo-app.log
-   ```
-
-### RDS に接続できない
-
-1. RDS エンドポイントを確認
-   ```bash
-   aws cloudformation describe-stacks \
-     --stack-name sre-handson-base \
-     --region ap-northeast-1 \
-     --query 'Stacks[0].Outputs[?OutputKey==`RDSEndpoint`].OutputValue' \
-     --output text
-   ```
-
-2. セキュリティグループで EC2 から RDS へのポート 3306 が許可されているか確認
-
-3. DB 名、ユーザー名、パスワードが正しいか確認
-   - DB 名: `sreapp`
-   - ユーザー名: `admin`
-   - パスワード: CloudFormation パラメータで指定した値
-
-## よくある質問
-
-### Q. X-Ray daemon をインストールする必要はありますか？
-
-A. いいえ、不要です。CloudWatch Agent の traces セクションで X-Ray トレースを収集します。既に X-Ray daemon をインストール済みの場合は、そのまま使い続けても問題ありません。
-
-### Q. アプリケーションのポートは何番ですか？
-
-A. ポート 8080 です。ALB はポート 80 でリクエストを受け付け、ポート 8080 でバックエンドに転送します。
-
-### Q. ログストリームは手動で作成する必要がありますか？
-
-A. いいえ、CloudWatch Agent がログを送信する際に自動的に作成されます。ロググループのみ事前に作成されている必要があります（CloudFormation テンプレートで自動作成されます）。
-
-### Q. アプリを手動でセットアップする必要はありますか？
-
-A. いいえ、不要です。`01-base-infrastructure.yaml` がエラー率デモアプリ、systemd サービス、CloudWatch Agent 設定を自動作成します。`CLI_COMMANDS.md` には自動作成された内容の確認手順を記載しています。
-
-## スタック削除（後片付け）
+まずイベントを確認します。
 
 ```bash
-# 番号の逆順で削除
-aws cloudformation delete-stack --stack-name sre-handson-cost --region us-east-1
-aws cloudformation delete-stack --stack-name sre-handson-alarms --region ap-northeast-1
-aws cloudformation delete-stack --stack-name sre-handson-log-filter --region ap-northeast-1
-aws cloudformation delete-stack --stack-name sre-handson-custom-metrics --region ap-northeast-1
-aws cloudformation delete-stack --stack-name sre-handson-dashboard --region ap-northeast-1
-aws cloudformation delete-stack --stack-name sre-handson-base --region ap-northeast-1
+aws cloudformation describe-stack-events \
+  --stack-name sre-handson-base \
+  --region ap-northeast-1 \
+  --max-items 10
 ```
 
-## コース情報
+### アプリにアクセスできない
 
-- Udemy: [【AWS SRE実践】構築から運用へ](https://www.udemy.com/course/aws-sre-cloudwatch/) 
-- 対象: AWS を使い始めて運用に課題を感じているエンジニア
-- 前提知識: AWS 基礎（EC2・S3・IAM の操作経験）
+```bash
+bash scripts/90_verify.sh
+```
+
+ALBのヘルスチェック、EC2の状態、CloudWatch Logsの出力を順に確認します。
+
+### ログが見えない
+
+ロググループ `/aws/ec2/sre-handson/webapp` を確認してください。EC2起動直後はCloudWatch Agentの反映まで数分かかることがあります。
+
+### 通知メールが届かない
+
+SNSの確認メールを承認しているか確認してください。承認しないとCloudWatch Alarmからメールは届きません。
 
 ## ライセンス
 

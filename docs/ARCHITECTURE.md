@@ -23,7 +23,7 @@
 | `03-custom-metrics.yaml` | `sre-handson-custom-metrics` | Lambda, EventBridge Rule, IAM Role | 1分ごとにサンプルのビジネスメトリクスを送る |
 | `04-log-metric-filter.yaml` | `sre-handson-log-filter` | Logs Metric Filter | JSONログから `ErrorCount` と `HTTP5xxCount` を作る |
 | `05-alarms-sns.yaml` | `sre-handson-alarms` | CloudWatch Alarm, SNS, Lambda | メトリクス悪化をメール/Slackへ通知する |
-| `06-cost-alerts.yaml` | `sre-handson-cost` | AWS Budgets, Cost Anomaly Detection, SNS | 費用の上振れを通知する |
+| `06-cost-alerts.yaml` | `sre-handson-cost-alerts` | AWS Budgets, Cost Anomaly Detection, SNS | 費用の上振れを通知する |
 
 ## リクエストの流れ
 

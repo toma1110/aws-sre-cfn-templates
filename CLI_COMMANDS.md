@@ -673,7 +673,7 @@ aws ssm send-command \
 ```bash
 aws cloudformation deploy \
   --template-file 06-cost-alerts.yaml \
-  --stack-name sre-handson-cost \
+  --stack-name sre-handson-cost-alerts \
   --region us-east-1 \
   --parameter-overrides \
     NotificationEmail=your@email.com \
@@ -764,7 +764,7 @@ mysql -h <RDS-Endpoint> -u admin -p
 
 ```bash
 # 逆順で削除
-aws cloudformation delete-stack --stack-name sre-handson-cost --region us-east-1
+aws cloudformation delete-stack --stack-name sre-handson-cost-alerts --region us-east-1
 aws cloudformation delete-stack --stack-name sre-handson-alarms --region ap-northeast-1
 aws cloudformation delete-stack --stack-name sre-handson-log-filter --region ap-northeast-1
 aws cloudformation delete-stack --stack-name sre-handson-custom-metrics --region ap-northeast-1
