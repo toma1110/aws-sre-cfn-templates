@@ -15,7 +15,7 @@ CloudWatch Alarm、SNS、メール、Slack通知の流れを作ります。
 - Slack Incoming Webhook URL
 - `sre-handson-base` スタック作成済み
 
-Slack Webhook URLは秘密値です。動画、画面共有、Issue、Gitに載せないでください。
+Slack Webhook URLは秘密値です。Issue、Git、チャット、公開ドキュメントなど第三者に見える場所に載せないでください。
 
 ## 手順
 

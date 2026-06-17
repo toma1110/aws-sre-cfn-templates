@@ -40,7 +40,7 @@ cat <<'EOF'
 
 重要:
 - SNS確認メールが届いたら承認してください。
-- Slack Webhook URLは画面共有や動画に映さないでください。
+- Slack Webhook URLは第三者に共有せず、IssueやGitなどに記録しないでください。
 
 次のステップ:
 bash scripts/08_incident_drill.sh
